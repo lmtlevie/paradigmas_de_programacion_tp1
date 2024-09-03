@@ -4,6 +4,7 @@ import Test.HUnit
 import Control.Arrow (ArrowChoice(left, right))
 
 
+
 --Definiciones de tipos
 
 type Procesador a b = a -> [b]
@@ -93,7 +94,7 @@ procSubTries (TrieNodo _ value) = value
 --foldAT :: undefined
 foldAT :: b -> (a -> b -> b -> b -> b) -> AT a -> b
 foldAT atNil atBin Nil = atNil
-foldAT atNil atBin (Tern raiz left right center) = atBin raiz (rec left) (rec center)  (rec right) 
+foldAT atNil atBin (Tern raiz left right center) = atBin raiz (rec left) (rec center)  (rec right)
   where rec = foldAT atNil atBin
 --foldRose :: undefined
 foldRose = undefined
@@ -103,12 +104,12 @@ foldTrie = undefined
 
 
 --Ejercicio 3
-unoxuno :: Procesador [a] [a]
-unoxuno = undefined
+unoxuno ::  Procesador [a] [a]
+unoxuno = map (: [])
+-- foldr (\x acc -> [x] : acc) []
 
 sufijos :: Procesador [a] [a]
-sufijos = undefined
-
+sufijos x = concatMap(\i -> [drop i x]) [0..length x]
 
 --Ejercicio 4
 --preorder :: undefined
