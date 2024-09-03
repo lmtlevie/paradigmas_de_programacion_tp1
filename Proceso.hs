@@ -1,6 +1,7 @@
 module Proceso (Procesador, AT(Nil,Tern), RoseTree(Rose), Trie(TrieNodo), foldAT, foldRose, foldTrie, procVacio, procId, procCola, procHijosRose, procHijosAT, procRaizTrie, procSubTries, unoxuno, sufijos, inorder, preorder, postorder, preorderRose, hojasRose, ramasRose, caminos, palabras, ifProc,(++!), (.!)) where
 
 import Test.HUnit
+import Control.Arrow (ArrowChoice(left, right))
 
 
 --Definiciones de tipos
@@ -44,7 +45,7 @@ instance Show a => Show (AT a) where
             showSubtree (indent + 2) left ++
             showSubtree (indent + 2) middle ++
             showSubtree (indent + 2) right
-        
+
         showSubtree :: Show a => Int -> AT a -> String
         showSubtree indent subtree =
             case subtree of
@@ -53,7 +54,7 @@ instance Show a => Show (AT a) where
 
 instance Show a => Show (Trie a) where
     show = showTrie ""
-      where 
+      where
         showTrie :: Show a => String -> Trie a -> String
         showTrie indent (TrieNodo maybeValue children) =
             let valueLine = case maybeValue of
@@ -65,32 +66,35 @@ instance Show a => Show (Trie a) where
 
 --Ejercicio 1
 procVacio :: Procesador a b
-procVacio = undefined
+procVacio = const []
 
 procId :: Procesador a a
-procId = undefined
+procId x = [x]
 
 procCola :: Procesador [a] a
-procCola = undefined
+procCola (_: xs)= xs
 
 procHijosRose :: Procesador (RoseTree a) (RoseTree a)
-procHijosRose = undefined
+procHijosRose (Rose valor hijos)  = hijos
 
 procHijosAT :: Procesador (AT a) (AT a)
-procHijosAT = undefined
+procHijosAT Nil = []
+procHijosAT (Tern _ left center right) = [left, center, right]
 
 procRaizTrie :: Procesador (Trie a) (Maybe a)
-procRaizTrie  = undefined
+procRaizTrie  (TrieNodo key _) = [key]
 
 procSubTries :: Procesador (Trie a) (Char, Trie a)
-procSubTries  = undefined
+procSubTries (TrieNodo _ value) = value
 
 
 --Ejercicio 2
 
 --foldAT :: undefined
-foldAT = undefined
-
+foldAT :: b -> (a -> b -> b -> b -> b) -> AT a -> b
+foldAT atNil atBin Nil = atNil
+foldAT atNil atBin (Tern raiz left right center) = atBin raiz (rec left) (rec center)  (rec right) 
+  where rec = foldAT atNil atBin
 --foldRose :: undefined
 foldRose = undefined
 
@@ -176,8 +180,7 @@ allTests = test [ -- Reemplazar los tests de prueba por tests propios
   ]
 
 testsEj1 = test [ -- Casos de test para el ejercicio 1
-  0             -- Caso de test 1 - expresión a testear
-    ~=? 0                                                               -- Caso de test 1 - resultado esperado
+  procVacio 8 ~=? [[]::[Char]]                                                               -- Caso de test 1 - resultado esperado
   ,
   1     -- Caso de test 2 - expresión a testear
     ~=? 1                                                               -- Caso de test 2 - resultado esperado
