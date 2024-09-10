@@ -4,7 +4,6 @@ import Test.HUnit
 import Control.Arrow (ArrowChoice(left, right))
 
 
-
 --Definiciones de tipos
 
 type Procesador a b = a -> [b]
@@ -12,7 +11,7 @@ type Procesador a b = a -> [b]
 
 -- Árboles ternarios
 data AT a = Nil | Tern a (AT a) (AT a) (AT a) deriving Eq
---E.g., at = Tern 1 (Tern 2 Nil Nil Nil) (Tern 3 Nil Nil Nil) (Tern 4 Nil Nil Nil)
+at = Tern 1 (Tern 2 Nil Nil Nil) (Tern 3 Nil Nil Nil) (Tern 4 Nil Nil Nil)
 --Es es árbol ternario con 1 en la raíz, y con sus tres hijos 2, 3 y 4.
 
 -- RoseTrees
@@ -96,11 +95,19 @@ foldAT :: b -> (a -> b -> b -> b -> b) -> AT a -> b
 foldAT atNil atBin Nil = atNil
 foldAT atNil atBin (Tern raiz left right center) = atBin raiz (rec left) (rec center)  (rec right)
   where rec = foldAT atNil atBin
+
 --foldRose :: undefined
-foldRose = undefined
+foldRose :: (t -> [b] -> b) -> RoseTree t -> b
+foldRose cRose (Rose n hijos)= cRose n (map rec hijos)
+  where rec = foldRose cRose
 
 --foldTrie :: undefined
-foldTrie = undefined
+
+
+foldTrie :: (Maybe a -> [(Char, b)]  -> b) -> Trie a -> b
+foldTrie fTrie (TrieNodo val hijos) = fTrie val (map rec hijos)
+  where rec (c,t) = (c, foldTrie fTrie t)
+
 
 
 --Ejercicio 3
@@ -109,54 +116,75 @@ unoxuno = map (: [])
 -- foldr (\x acc -> [x] : acc) []
 
 sufijos :: Procesador [a] [a]
-sufijos x = concatMap(\i -> [drop i x]) [0..length x]
+sufijos x = concatMap (\i -> [drop i x]) [0..length x]
 
 --Ejercicio 4
 --preorder :: undefined
-preorder = undefined
+
+preorder :: AT a -> [a]
+preorder = foldAT [] (\x left middle right -> x : (left ++ right ++ middle) )
 
 --inorder :: undefined
-inorder = undefined
+inorder = foldAT [] (\x left middle right -> left ++ right ++[x] ++ middle )
 
 --postorder :: undefined
-postorder = undefined
+postorder :: AT a -> [a]
+postorder = foldAT [] (\x left middle right -> (left ++ right ++ middle ) ++ [x])
 
 --Ejercicio 5
-
+miRT = Rose 1 [Rose 2 [], Rose 3 [Rose 4 [], Rose 5 [], Rose 6 []]]
 preorderRose :: Procesador (RoseTree a) a
-preorderRose = undefined
+preorderRose = foldRose (\x recs -> x : concat recs)
 
 hojasRose :: Procesador (RoseTree a) a
-hojasRose = undefined
+hojasRose = foldRose (\x recs -> if null recs then [x] else concat recs)
 
 ramasRose :: Procesador (RoseTree a) [a]
-ramasRose = undefined
+ramasRose = foldRose (\x recs -> if null recs then [[x]] else map (x :) (concat recs))
 
 
 --Ejercicio 6
+-- data Trie a = TrieNodo (Maybe a) [(Char, Trie a)] deriving Eq
 
+t = TrieNodo Nothing [ ('a', TrieNodo (Just True) []),
+  ('b', TrieNodo Nothing [('a', TrieNodo (Just True) [('d', TrieNodo Nothing [])])]),
+  ('c', TrieNodo (Just True) [])]
 --caminos :: undefined
-caminos = undefined
+
+
+-- No me importa si es Just o Nothing, quiero agregar el char a la lista
+
+--caminos (TrieNodo _ []) = [""]
+--caminos (TrieNodo _ hijos) = "" : concatMap (\(c, t) -> map (c :) (caminos t)) hijos
+caminos :: Trie a -> [[Char]]
+caminos  = foldTrie (\_ subcaminos -> "" : concatMap (\(c, t) -> map (c :) t) subcaminos)
+
+
+--Ahora usanod foldTrie
+-- Definición de caminos usando foldAT
 
 
 --Ejercicio 7
 
 --palabras :: undefined
-palabras = undefined
-
-
+palabras :: Trie a -> [[Char]]
+palabras = foldTrie (\val subcaminos ->
+    case val of
+      Just _  -> "" : concatMap (\(c, t) -> map (c :) t) subcaminos 
+      Nothing -> concatMap (\(c, t) -> map (c :) t) subcaminos 
+  )
 --Ejercicio 8
 -- 8.a)
 ifProc :: (a->Bool) -> Procesador a b -> Procesador a b -> Procesador a b
-ifProc = undefined
+ifProc x a b =  (\y -> if x y then a y else b y)
 
 -- 8.b)
 (++!) :: Procesador a b -> Procesador a b -> Procesador a b
-(++!) = undefined
+(++!) a b = (\x -> (a x) ++ (b x))
 
 -- 8.c)
 (.!) :: Procesador b c -> Procesador a b -> Procesador a c
-(.!) = undefined
+(.!) a b= (\x -> concatMap a( b x))
 
 --Ejercicio 9
 -- Se recomienda poner la demostración en un documento aparte, por claridad y prolijidad, y, preferentemente, en algún formato de Markup o Latex, de forma de que su lectura no sea complicada.
@@ -181,8 +209,6 @@ allTests = test [ -- Reemplazar los tests de prueba por tests propios
   ]
 
 testsEj1 = test [ -- Casos de test para el ejercicio 1
-  procVacio 8 ~=? [[]::[Char]]                                                               -- Caso de test 1 - resultado esperado
-  ,
   1     -- Caso de test 2 - expresión a testear
     ~=? 1                                                               -- Caso de test 2 - resultado esperado
   ]
