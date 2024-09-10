@@ -72,52 +72,21 @@ procId :: Procesador a a
 procId x = [x]
 
 procCola :: Procesador [a] a
-<<<<<<< HEAD
 procCola [] = []
 procCola (_:xs) = xs
-||||||| 9c8b992
-procCola = undefined
-=======
-procCola (_: xs)= xs
->>>>>>> 9fea12ce674f92c4fe6312affaa21476ba308a4f
 
 procHijosRose :: Procesador (RoseTree a) (RoseTree a)
-<<<<<<< HEAD
-procHijosRose (Rose a x ) = x
-||||||| 9c8b992
-procHijosRose = undefined
-=======
 procHijosRose (Rose valor hijos)  = hijos
->>>>>>> 9fea12ce674f92c4fe6312affaa21476ba308a4f
 
 procHijosAT :: Procesador (AT a) (AT a)
-<<<<<<< HEAD
-procHijosAT Nil = []
-procHijosAT (Tern a left middle right)= [left,middle,right]
-||||||| 9c8b992
-procHijosAT = undefined
-=======
 procHijosAT Nil = []
 procHijosAT (Tern _ left center right) = [left, center, right]
->>>>>>> 9fea12ce674f92c4fe6312affaa21476ba308a4f
 
 procRaizTrie :: Procesador (Trie a) (Maybe a)
-<<<<<<< HEAD
-procRaizTrie (TrieNodo key values) = [key]
-||||||| 9c8b992
-procRaizTrie  = undefined
-=======
 procRaizTrie  (TrieNodo key _) = [key]
->>>>>>> 9fea12ce674f92c4fe6312affaa21476ba308a4f
 
 procSubTries :: Procesador (Trie a) (Char, Trie a)
-<<<<<<< HEAD
-procSubTries (TrieNodo key values) = values
-||||||| 9c8b992
-procSubTries  = undefined
-=======
 procSubTries (TrieNodo _ value) = value
->>>>>>> 9fea12ce674f92c4fe6312affaa21476ba308a4f
 
 
 --Ejercicio 2
@@ -216,13 +185,7 @@ ifProc x a b =  (\y -> if x y then a y else b y)
 
 -- 8.c)
 (.!) :: Procesador b c -> Procesador a b -> Procesador a c
-<<<<<<< HEAD
 (.!) a b = (\x -> concatMap a (b x)) 
-||||||| 9c8b992
-(.!) = undefined
-=======
-(.!) a b= (\x -> concatMap a( b x))
->>>>>>> 9fea12ce674f92c4fe6312affaa21476ba308a4f
 
 --Ejercicio 9
 -- Se recomienda poner la demostración en un documento aparte, por claridad y prolijidad, y, preferentemente, en algún formato de Markup o Latex, de forma de que su lectura no sea complicada.
@@ -247,7 +210,6 @@ allTests = test [ -- Reemplazar los tests de prueba por tests propios
   ]
 
 testsEj1 = test [ -- Casos de test para el ejercicio 1
-<<<<<<< HEAD
   
   ([] :: [Int]) ~=? (procVacio [1,2,3] ) 
   ,
@@ -266,16 +228,6 @@ testsEj1 = test [ -- Casos de test para el ejercicio 1
   [('a',TrieNodo (Just True) [])] ~=? (procSubTries  (TrieNodo (Just True) [('a', TrieNodo (Just True) [])] ))
 
 
-||||||| 9c8b992
-  0             -- Caso de test 1 - expresión a testear
-    ~=? 0                                                               -- Caso de test 1 - resultado esperado
-  ,
-  1     -- Caso de test 2 - expresión a testear
-    ~=? 1                                                               -- Caso de test 2 - resultado esperado
-=======
-  1     -- Caso de test 2 - expresión a testear
-    ~=? 1                                                               -- Caso de test 2 - resultado esperado
->>>>>>> 9fea12ce674f92c4fe6312affaa21476ba308a4f
   ]
 
 
