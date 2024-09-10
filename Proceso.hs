@@ -71,19 +71,21 @@ procId :: Procesador a a
 procId = undefined
 
 procCola :: Procesador [a] a
-procCola = undefined
+procCola [] = []
+procCola (_:xs) = xs
 
 procHijosRose :: Procesador (RoseTree a) (RoseTree a)
-procHijosRose = undefined
+procHijosRose (Rose a x ) = x
 
 procHijosAT :: Procesador (AT a) (AT a)
-procHijosAT = undefined
+procHijosAT Nil = []
+procHijosAT (Tern a left middle right)= [left,middle,right]
 
 procRaizTrie :: Procesador (Trie a) (Maybe a)
-procRaizTrie  = undefined
+procRaizTrie (TrieNodo key values) = [key]
 
 procSubTries :: Procesador (Trie a) (Char, Trie a)
-procSubTries  = undefined
+procSubTries (TrieNodo key values) = values
 
 
 --Ejercicio 2
@@ -151,7 +153,7 @@ ifProc = undefined
 
 -- 8.c)
 (.!) :: Procesador b c -> Procesador a b -> Procesador a c
-(.!) = undefined
+(.!) a b = (\x -> concatMap a (b x)) 
 
 --Ejercicio 9
 -- Se recomienda poner la demostración en un documento aparte, por claridad y prolijidad, y, preferentemente, en algún formato de Markup o Latex, de forma de que su lectura no sea complicada.
@@ -176,12 +178,27 @@ allTests = test [ -- Reemplazar los tests de prueba por tests propios
   ]
 
 testsEj1 = test [ -- Casos de test para el ejercicio 1
-  0             -- Caso de test 1 - expresión a testear
-    ~=? 0                                                               -- Caso de test 1 - resultado esperado
+  
+  ([] :: [Int]) ~=? (procVacio [1,2,3] ) 
   ,
-  1     -- Caso de test 2 - expresión a testear
-    ~=? 1                                                               -- Caso de test 2 - resultado esperado
+  ([[1,2,3]]) ~=? (procId [1,2,3])
+  ,
+  ([2,3]) ~=? (procCola [1,2,3])
+  ,
+  ([] :: [Int]) ~=? (procCola ([] :: [Int]))
+  ,
+  ([Rose 2 [], Rose 3 [], Rose 4 [], Rose 5 []]) ~=? (procHijosRose (Rose 1 [Rose 2 [], Rose 3 [], Rose 4 [], Rose 5 []]) )
+  ,
+  [(Tern 2 Nil Nil Nil),(Tern 3 Nil Nil Nil),(Tern 4 Nil Nil Nil)] ~=? (procHijosAT (Tern 1 (Tern 2 Nil Nil Nil) (Tern 3 Nil Nil Nil) (Tern 4 Nil Nil Nil)))
+  ,
+  [(Just True)] ~=? (procRaizTrie  (TrieNodo (Just True) [('a', TrieNodo (Just True) [])] ))
+  ,
+  [('a',TrieNodo (Just True) [])] ~=? (procSubTries  (TrieNodo (Just True) [('a', TrieNodo (Just True) [])] ))
+
+
   ]
+
+
 
 testsEj2 = test [ -- Casos de test para el ejercicio 2
   (0,0)       -- Caso de test 1 - expresión a testear
