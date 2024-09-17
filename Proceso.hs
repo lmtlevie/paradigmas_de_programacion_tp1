@@ -24,7 +24,8 @@ rt2 = Rose "p" [Rose "p" [],Rose "e" [],Rose "l" [],Rose "u" [],Rose "c" [],Rose
 -- Tries
 data Trie a = TrieNodo (Maybe a) [(Char, Trie a)] deriving Eq
 t = TrieNodo (Just True) [('a', TrieNodo (Just True) []), ('b', TrieNodo Nothing [('a', TrieNodo (Just True) [('d', TrieNodo Nothing [])])]), ('c', TrieNodo (Just False) [])]
-t2 = TrieNodo Nothing [('p', TrieNodo Nothing [('e', TrieNodo Nothing [('l', TrieNodo Nothing [('e',TrieNodo Nothing [('l',TrieNodo Nothing [('u',TrieNodo Nothing [('c',TrieNodo Nothing [('h',TrieNodo Nothing [('e', TrieNodo Nothing [])])])])])])])])])]
+t2 = TrieNodo Nothing [('p', TrieNodo Nothing [('e', TrieNodo Nothing [('l', TrieNodo Nothing [('e',TrieNodo Nothing [('l',TrieNodo Nothing [('u',TrieNodo Nothing [('c',TrieNodo Nothing [('h',TrieNodo Nothing [('e', TrieNodo (Just True) [])])])])])])])])])]
+t3 = TrieNodo Nothing [('p', TrieNodo Nothing [('e', TrieNodo Nothing [('l', TrieNodo Nothing [('e',TrieNodo Nothing [('l',TrieNodo Nothing [('u',TrieNodo Nothing [('c',TrieNodo Nothing [('h',TrieNodo Nothing [('e', TrieNodo Nothing [])])])])])])])])])]
 -- es el Trie Bool de que tiene True en la raíz, tres hijos (a, b, y c), y, a su vez, b tiene como hijo a d.
 
 
@@ -258,24 +259,33 @@ testsEj5 = test [ -- Casos de test para el ejercicio 5
   ]
 
 testsEj6 = test [ -- Casos de test para el ejercicio 6
-  ["","a","b","ba","bad","c"] ~=? (caminos t),
-  ["","p","pe","pel","pele","pelel","pelelu","peleluc","peleluch","peleluche"] ~=? (caminos t2)
+  ["","a","b","ba","bad","c"] ~=? (caminos t), -- caminos bifurcados
+  ["","p","pe","pel","pele","pelel","pelelu","peleluc","peleluch","peleluche"] ~=? (caminos t2) -- caminos 'prefijos'
   ]
 
 testsEj7 = test [ -- Casos de test para el ejercicio 7
-    True ~=? True
+    ["","a","ba","c"] ~=? (palabras t), -- trie multiple palabras
+    ["peleluche"] ~=? (palabras t2), -- trie con una palabra
+    [] ~=? (palabras t3) -- trie todos Nothing
                 ]
 
 testsEj8a = test [ -- Casos de test para el ejercicio 7
-  True         -- Caso de test 1 - expresión a testear
-    ~=? True                                          -- Caso de test 1 - resultado esperado
-  ]
+  ["p","e","l","u","c","h","e"] 
+    ~=? (ifProc (\x -> x == Nil) procVacio preorder at2),
+    ["peleluche"] ~=? (ifProc (\x ->length (palabras x) == 1 ) palabras procVacio t2) -- si el trie tiene una sola palabra, devolverla sino vacio.
+                 ]
 testsEj8b = test [ -- Casos de test para el ejercicio 7
-  True         -- Caso de test 1 - expresión a testear
-    ~=? True                                          -- Caso de test 1 - resultado esperado
-  ]
+  ["peleluche","","p","pe","pel","pele","pelel","pelelu","peleluc","peleluch","peleluche"] ~=? (palabras ++! caminos) t2, -- palabras ++ caminos Trie
+  ["p","e","l","u","c","h","e","p","p","e","l","u","c","h","e"] ~=? ((hojasRose ++! preorderRose) rt2) -- hojas + preorder RoseTree
+                 ]
 testsEj8c = test [ -- Casos de test para el ejercicio 7
-  True         -- Caso de test 1 - expresión a testear
-    ~=? True                                          -- Caso de test 1 - resultado esperado
+  "ppepelpelepelelpelelupelelucpeleluchpeleluche" 
+  ~=?
+    ( (map (\x -> x)) .! caminos) t2, -- caminos concatenados
+    [["p"],["p"],["p"],["e"],["p"],["l"],["p"],["u"],["p"],["c"],["p"],["h"],["p"],["e"]] 
+  ~=? 
+    (( unoxuno .! ramasRose ) rt2) -- ramas separadas unoxuno
+
+
   ]
 
