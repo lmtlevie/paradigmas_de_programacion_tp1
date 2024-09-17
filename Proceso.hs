@@ -12,16 +12,19 @@ type Procesador a b = a -> [b]
 -- Árboles ternarios
 data AT a = Nil | Tern a (AT a) (AT a) (AT a) deriving Eq
 at = Tern 1 (Tern 2 Nil Nil Nil) (Tern 3 Nil Nil Nil) (Tern 4 Nil Nil Nil)
+at2 = Tern "p" (Tern "e" (Tern "l" (Nil) (Nil) (Nil)) (Tern "u" Nil Nil Nil) (Tern "c" Nil Nil Nil)) (Tern "h" (Tern "e" Nil Nil Nil) Nil Nil) Nil
 --Es es árbol ternario con 1 en la raíz, y con sus tres hijos 2, 3 y 4.
 
 -- RoseTrees
 data RoseTree a = Rose a [RoseTree a] deriving Eq
---E.g., rt = Rose 1 [Rose 2 [], Rose 3 [], Rose 4 [], Rose 5 []] 
+rt = Rose 1 [Rose 2 [], Rose 3 [], Rose 4 [], Rose 5 []] 
+rt2 = Rose "p" [Rose "p" [],Rose "e" [],Rose "l" [],Rose "u" [],Rose "c" [],Rose "h" [],Rose "e" []]
 --es el RoseTree con 1 en la raíz y 4 hijos (2, 3, 4 y 5)
 
 -- Tries
 data Trie a = TrieNodo (Maybe a) [(Char, Trie a)] deriving Eq
--- E.g., t = TrieNodo (Just True) [('a', TrieNodo (Just True) []), ('b', TrieNodo Nothing [('a', TrieNodo (Just True) [('d', TrieNodo Nothing [])])]), ('c', TrieNodo (Just True) [])]
+t = TrieNodo (Just True) [('a', TrieNodo (Just True) []), ('b', TrieNodo Nothing [('a', TrieNodo (Just True) [('d', TrieNodo Nothing [])])]), ('c', TrieNodo (Just False) [])]
+t2 = TrieNodo Nothing [('p', TrieNodo Nothing [('e', TrieNodo Nothing [('l', TrieNodo Nothing [('e',TrieNodo Nothing [('l',TrieNodo Nothing [('u',TrieNodo Nothing [('c',TrieNodo Nothing [('h',TrieNodo Nothing [('e', TrieNodo Nothing [])])])])])])])])])]
 -- es el Trie Bool de que tiene True en la raíz, tres hijos (a, b, y c), y, a su vez, b tiene como hijo a d.
 
 
@@ -91,18 +94,14 @@ procSubTries (TrieNodo _ value) = value
 
 --Ejercicio 2
 
---foldAT :: undefined
 foldAT :: b -> (a -> b -> b -> b -> b) -> AT a -> b
 foldAT atNil atBin Nil = atNil
 foldAT atNil atBin (Tern raiz left right center) = atBin raiz (rec left) (rec center)  (rec right)
   where rec = foldAT atNil atBin
 
---foldRose :: undefined
 foldRose :: (t -> [b] -> b) -> RoseTree t -> b
 foldRose cRose (Rose n hijos)= cRose n (map rec hijos)
   where rec = foldRose cRose
-
---foldTrie :: undefined
 
 
 foldTrie :: (Maybe a -> [(Char, b)]  -> b) -> Trie a -> b
@@ -114,21 +113,18 @@ foldTrie fTrie (TrieNodo val hijos) = fTrie val (map rec hijos)
 --Ejercicio 3
 unoxuno ::  Procesador [a] [a]
 unoxuno = map (: [])
--- foldr (\x acc -> [x] : acc) []
 
 sufijos :: Procesador [a] [a]
 sufijos x = concatMap (\i -> [drop i x]) [0..length x]
 
 --Ejercicio 4
---preorder :: undefined
 
 preorder :: AT a -> [a]
 preorder = foldAT [] (\x left middle right -> x : (left ++ right ++ middle) )
 
---inorder :: undefined
+inorder :: AT a -> [a]
 inorder = foldAT [] (\x left middle right -> left ++ right ++[x] ++ middle )
 
---postorder :: undefined
 postorder :: AT a -> [a]
 postorder = foldAT [] (\x left middle right -> (left ++ right ++ middle ) ++ [x])
 
@@ -145,36 +141,26 @@ ramasRose = foldRose (\x recs -> if null recs then [[x]] else map (x :) (concat 
 
 
 --Ejercicio 6
--- data Trie a = TrieNodo (Maybe a) [(Char, Trie a)] deriving Eq
-
-t = TrieNodo Nothing [ ('a', TrieNodo (Just True) []),
-  ('b', TrieNodo Nothing [('a', TrieNodo (Just True) [('d', TrieNodo Nothing [])])]),
-  ('c', TrieNodo (Just True) [])]
---caminos :: undefined
 
 
--- No me importa si es Just o Nothing, quiero agregar el char a la lista
 
---caminos (TrieNodo _ []) = [""]
---caminos (TrieNodo _ hijos) = "" : concatMap (\(c, t) -> map (c :) (caminos t)) hijos
 caminos :: Trie a -> [[Char]]
 caminos  = foldTrie (\_ subcaminos -> "" : concatMap (\(c, t) -> map (c :) t) subcaminos)
 
 
---Ahora usanod foldTrie
--- Definición de caminos usando foldAT
 
 
 --Ejercicio 7
 
---palabras :: undefined
 palabras :: Trie a -> [[Char]]
 palabras = foldTrie (\val subcaminos ->
     case val of
       Just _  -> "" : concatMap (\(c, t) -> map (c :) t) subcaminos 
       Nothing -> concatMap (\(c, t) -> map (c :) t) subcaminos 
   )
+
 --Ejercicio 8
+
 -- 8.a)
 ifProc :: (a->Bool) -> Procesador a b -> Procesador a b -> Procesador a b
 ifProc x a b =  (\y -> if x y then a y else b y)
@@ -232,35 +218,53 @@ testsEj1 = test [ -- Casos de test para el ejercicio 1
 
 
 
-testsEj2 = test [ -- Casos de test para el ejercicio 2
-  (0,0)       -- Caso de test 1 - expresión a testear
-    ~=? (0,0)                   -- Caso de test 1 - resultado esperado
+testsEj2 = test [ 
+  (10)      
+    ~=? (foldAT 0 (\x left middle right -> x + (left + middle + right)) at), -- sumar nodos arbol ternario
+  (15)
+    ~=? (foldRose (\x recs -> x + sum recs) rt), -- sumar nodos rose tree
+  (3)
+    ~=? (foldTrie (\val subcaminos ->
+    case val of
+      Just True  -> 1 + sum (map snd subcaminos)
+      Nothing -> sum (map snd subcaminos)
+      Just False -> sum (map snd subcaminos)
+  ) t)              -- contar nodos True en trie
   ]
 
 testsEj3 = test [ -- Casos de test para el ejercicio 3
-  'a'      -- Caso de test 1 - expresión a testear
-    ~=? 'a'            -- Caso de test 1 - resultado esperado
+  ([[[1]]]) ~=? (unoxuno [[1]]),
+  ([[1],[2],[3],[4]]) ~=? (unoxuno [1,2,3,4]),
+  ([""]) ~=? (sufijos ""),
+  (["test","est","st","t",""]) ~=? (sufijos "test")
   ]
 
 testsEj4 = test [ -- Casos de test para el ejercicio 4
-  ""       -- Caso de test 1 - expresión a testear
-    ~=? ""                             -- Caso de test 1 - resultado esperado
+  [1,2,3,4] ~=? (preorder at),
+  ["p","e","l","u","c","h","e"] ~=? (preorder at2),
+  [2,3,4,1] ~=? (postorder at),
+  ["l","u","c","e","e","h","p"] ~=? (postorder at2),
+  [2,3,1,4] ~=? (inorder at),
+  ["l","u","e","c","e","h","p"] ~=? (inorder at2)
   ]
 
 testsEj5 = test [ -- Casos de test para el ejercicio 5
-  0       -- Caso de test 1 - expresión a testear
-    ~=? 0                                       -- Caso de test 1 - resultado esperado
+  [1,2,3,4,5]  ~=? (preorderRose rt),
+  ["p","p","e","l","u","c","h","e"] ~=? (preorderRose rt2),
+  [2,3,4,5] ~=? (hojasRose rt),
+  ["p","e","l","u","c","h","e"] ~=? (hojasRose rt2),
+  [[1,2],[1,3],[1,4],[1,5]] ~=? (ramasRose rt),
+  [["p","p"],["p","e"],["p","l"],["p","u"],["p","c"],["p","h"],["p","e"]] ~=? (ramasRose rt2)
   ]
 
 testsEj6 = test [ -- Casos de test para el ejercicio 6
-  False       -- Caso de test 1 - expresión a testear
-    ~=? False                                            -- Caso de test 1 - resultado esperado
+  ["","a","b","ba","bad","c"] ~=? (caminos t),
+  ["","p","pe","pel","pele","pelel","pelelu","peleluc","peleluch","peleluche"] ~=? (caminos t2)
   ]
 
 testsEj7 = test [ -- Casos de test para el ejercicio 7
-  True         -- Caso de test 1 - expresión a testear
-    ~=? True                                          -- Caso de test 1 - resultado esperado
-  ]
+    True ~=? True
+                ]
 
 testsEj8a = test [ -- Casos de test para el ejercicio 7
   True         -- Caso de test 1 - expresión a testear
