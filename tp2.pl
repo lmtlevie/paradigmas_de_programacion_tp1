@@ -42,25 +42,43 @@ serializar(paralelo(P,Q),XS) :- serializar(P,R1),serializar(Q,R2),intercalar(R1,
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Ejercicio 5
-%% contenidoBuffer(+B,+ProcesoOLista,?Contenidos)
-contenidoBuffer(B, [], []).
-contenidoBuffer(B,[leer(B)|XS],C) :- contenidoBuffer(B,XS,L), [_ | C] is L .
-contenidoBuffer(B1,[leer(B2)|XS],C) :- B1 \= B2,contenidoBuffer(B1,XS,C).
-contenidoBuffer(B,[escribir(B,P)|XS],[P|C]) :- contenidoBuffer(B,XS,C).
-contenidoBuffer(B1,[escribir(B2,P)|XS],C) :- B1 \= B2,contenidoBuffer(B1,XS,C).
-contenidoBuffer(B,[secuencia(P,Q)|XS],C) :- contenidoBuffer(B,P,C1), contenidoBuffer( B, Q, C2 ), append(C1, C2, C3),
-                                        append(C3, XS, RS), contenidoBuffer( B, RS, C ).
-contenidoBuffer(B, [paralelo(P,Q)|XS], C) :- contenidoBuffer(B, P, C1), contenidoBuffer(B, Q, C2),
-                                        intercalar( C1, C2, C3 ), append(C3, XS, RS), contenidoBuffer(B, RS, C).
-contenidoBuffer(B, leer(F), [] ).
-contenidoBuffer(B, escribir(B, P), [P]).
-contenidoBuffer(B1, escribir(B2, F), []).
-contenidoBuffer(B, secuencia(P,Q), C) :- contenidoBuffer(B, [secuencia(P,Q)], C).
-contenidoBuffer(B, paralelo(P,Q), C) :- contenidoBuffer(B, [paralelo(P,Q),C]).
+%% contenidoInversoBuffer(+B,+ProcesoOLista,?Contenidos)
+
+aplanarProceso( [],[] ).
+aplanarProceso( computar,[] ).
+aplanarProceso( escribir(B, P) ,[escribir(B, P) ] ).
+aplanarProceso( leer(B),[leer(B)] ).
+aplanarProceso(secuencia(P,Q), RS) :- aplanarProceso(P, PS), aplanarProceso(Q, QS), append(PS, QS, RS). 
+aplanarProceso(paralelo(P,Q), RS) :- aplanarProceso(P, PS), aplanarProceso(Q, QS), intercalar(PS, QS, RS). 
+
+aplanarProceso( [X| XS], RS ) :- aplanarProceso(X, XR), aplanarProceso(XS, XSR), append(XR, XSR, RS).
+
+
+contenidoInversoBuffer(B, [], []).
+contenidoInversoBuffer(B, computar, []). 
+contenidoInversoBuffer(B, escribir(B, P), [P]).
+contenidoInversoBuffer(B1, escribir(B2, F), []):- B1 \= B2.
+
+contenidoInversoBuffer(B, [computar | XS], C) :- contenidoInversoBuffer(B,XS,C).
+contenidoInversoBuffer(B,[leer(B)|XS],C) :- member(escribir(B, _), XS), contenidoInversoBuffer(B,XS,L), append( C, [_], L).
+contenidoInversoBuffer(B1,[leer(B2)|XS],C) :- B1 \= B2, contenidoInversoBuffer(B1,XS,C).
+
+contenidoInversoBuffer(B,[escribir(B,P)|XS],[P|C]) :- contenidoInversoBuffer(B,XS,C).
+contenidoInversoBuffer(B1,[escribir(B2,P)|XS],C) :- B1 \= B2,contenidoInversoBuffer(B1,XS,C).
+
+contenidoBuffer(B, PS, C) :- aplanarProceso(PS, GU), reverse(GU, RS), contenidoInversoBuffer(B, RS, C1), reverse(C1, C).
+
+
 
 %% Ejercicio 6
 %% contenidoLeido(+ProcesoOLista,?Contenidos)
-contenidoLeido(_,_).
+contenidoAplanadoLeido( [], []).
+contenidoAplanadoLeido( [leer(B) | XS], C) :-select( escribir(B,CACA), XS, XSSC),!,  contenidoAplanadoLeido(XSSC, RS), append([CACA], RS, C).
+contenidoAplanadoLeido(  [escribir(_, _) | XS], C ) :- contenidoAplanadoLeido(XS, C).
+
+contenidoLeido( POL , C) :- aplanarProceso(POL, APOL), reverse(APOL, RAPOL), contenidoAplanadoLeido(RAPOL, CR), reverse(CR, C).
+
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -89,6 +107,9 @@ cantidadTestsBasicos(2). % Actualizar con la cantidad de tests que entreguen
 testBasico(1) :- proceso(computar).
 testBasico(2) :- proceso(secuencia(escribir(1,pepe),escribir(2,pipo))).
 testBasico(3) :- buffersUsados(escribir(1, hola), [1]).
+testBasico(4) :- contenidoInversoBuffer(1,[escribir(1,hola), escribir(2,no), escribir(2,2),leer(1), escribir(1,eyy),escribir(1,a)],[hola,a]).
+testBasico(5) :- contenidoInversoBuffer(2,[escribir(1,pp),escribir(2,ala),escribir(1,ola), computar,escribir(1,mundo),leer(1)],[ala] ).
+testBasico(6) :- contenidoBuffer(1,[escribir(1,pa),escribir(2,ma),escribir(1,hola), computar,escribir(1,mundo),leer(1)],C).
 % Agregar más tests
 
 cantidadTestsProcesos(0). % Actualizar con la cantidad de tests que entreguen
