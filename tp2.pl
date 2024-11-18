@@ -87,10 +87,40 @@ contenidoLeido( POL , C) :- aplanarProceso(POL, APOL), reverse(APOL, RAPOL), con
 
 %% Ejercicio 7
 %% esSeguro(+P)
+esSeguro([]).
 
+% Verifica cada operación en la lista.
+esSeguro([ X| XS]):-esSeguro(XS), esOperacionMinimalSegura(X).
+esSeguro([X | XS]) :-
+    esSeguro(XS),           % Verifica recursivamente el resto de la lista.
+    esOperacionSegura(X). % Verifica si la operación X es segura.
+
+esOperacionMinimalSegura(leer(_)).
+esOperacionMinimalSegura(escribir(_, _)).
+esOperacionMinimalSegura(computar).
+
+esOperacionSegura(secuencia(P, Q)) :-
+    esSeguro(P), % Ambos procesos deben ser seguros.
+    esSeguro(Q),
+    forall(aplanarProceso(secuencia(P, Q), PC), contenidoLeido(PC, _)).
+
+esOperacionSegura(paralelo(P, Q)) :-
+    esSeguro(P),
+    esSeguro(Q),
+    forall(aplanarProceso(paralelo(P, Q), PC), contenidoLeido(PC, _)),
+    buffersUsados(P, BP),
+    buffersUsados(Q, BQ),
+    intersection(BP, BQ, []). % No deben compartir buffers.
 %% Ejercicio 8
 %% ejecucionSegura( XS,+BS,+CS) - COMPLETAR LA INSTANCIACIÓN DE XS
-ejecucionSegura(_,_,_).
+
+ejecucionSegura([], _,_).
+ejecucionSegura([computar|XS], BS, CS):- esSeguro(XS), ejecucionSegura(XS, BS, CS).
+ejecucionSegura([leer(B)|XS], BS, CS):- esSeguro(XS), member(B, BS), ejecucionSegura(XS, BS, CS).
+ejecucionSegura([escribir(B,C)|XS], BS, CS):-esSeguro(XS), member(B, BS), member(C,CS), ejecucionSegura(XS, BS, CS).
+
+
+
 
 %% 8.1. Analizar la reversibilidad de XS, justificando adecuadamente por qué el predicado se comporta como
 %% lo hace.
