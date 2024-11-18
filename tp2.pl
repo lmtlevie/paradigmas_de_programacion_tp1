@@ -55,19 +55,19 @@ aplanarProceso( [X| XS], RS ) :- aplanarProceso(X, XR), aplanarProceso(XS, XSR),
 
 
 contenidoInversoBuffer(B, [], []).
-contenidoInversoBuffer(B, computar, []). 
-contenidoInversoBuffer(B, escribir(B, P), [P]).
-contenidoInversoBuffer(B1, escribir(B2, F), []):- B1 \= B2.
+%contenidoInversoBuffer(B, computar, []). 
+%contenidoInversoBuffer(B, escribir(B, P), [P]).
+%contenidoInversoBuffer(B1, escribir(B2, F), []):- B1 \= B2.
 
 contenidoInversoBuffer(B, [computar | XS], C) :- contenidoInversoBuffer(B,XS,C).
-contenidoInversoBuffer(B,[leer(B)|XS],C) :- member(escribir(B, _), XS), contenidoInversoBuffer(B,XS,L), append( C, [_], L).
+contenidoInversoBuffer(B,[leer(B)|XS],C) :- member(escribir(B, _), XS), !, contenidoInversoBuffer(B,XS,L), append( C, [_], L). %member devuelve true para distintas escrituras por eso está el '!'.
 contenidoInversoBuffer(B1,[leer(B2)|XS],C) :- B1 \= B2, contenidoInversoBuffer(B1,XS,C).
 
 contenidoInversoBuffer(B,[escribir(B,P)|XS],[P|C]) :- contenidoInversoBuffer(B,XS,C).
 contenidoInversoBuffer(B1,[escribir(B2,P)|XS],C) :- B1 \= B2,contenidoInversoBuffer(B1,XS,C).
 
 contenidoBuffer(B, PS, C) :- aplanarProceso(PS, GU), reverse(GU, RS), contenidoInversoBuffer(B, RS, C1), reverse(C1, C).
-
+%contenidoBufer tiene en PS las cosas que van a pasar, ContenidoInversoBuffer tiene en PS lo que pasó. 
 
 
 %% Ejercicio 6
