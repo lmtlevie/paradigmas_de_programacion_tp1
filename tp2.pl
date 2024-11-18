@@ -132,21 +132,74 @@ ejecucionSegura([escribir(B,C)|XS], BS, CS):-esSeguro(XS), member(B, BS), member
 %%%%%%%%%%%
 
 % Se espera que completen con las subsecciones de tests que crean necesarias, más allá de las puestas en estos ejemplos
+cantidadTestsBasicos(20).
 
-cantidadTestsBasicos(2). % Actualizar con la cantidad de tests que entreguen
+%ej1
 testBasico(1) :- proceso(computar).
-testBasico(2) :- proceso(secuencia(escribir(1,pepe),escribir(2,pipo))).
-testBasico(3) :- buffersUsados(escribir(1, hola), [1]).
-testBasico(4) :- contenidoInversoBuffer(1,[escribir(1,hola), escribir(2,no), escribir(2,2),leer(1), escribir(1,eyy),escribir(1,a)],[hola,a]).
-testBasico(5) :- contenidoInversoBuffer(2,[escribir(1,pp),escribir(2,ala),escribir(1,ola), computar,escribir(1,mundo),leer(1)],[ala] ).
-testBasico(6) :- contenidoBuffer(1,[escribir(1,pa),escribir(2,ma),escribir(1,hola), computar,escribir(1,mundo),leer(1)],C).
+testBasico(2) :- proceso(leer(1)).
+testBasico(3) :- proceso(escribir(1, a)).
+testBasico(4) :- proceso(secuencia(escribir(1, a), leer(1))).
+testBasico(5) :- proceso(paralelo(escribir(1, a), escribir(1, b))).
+
+testBasico(6) :- proceso(secuencia(computar, computar)).
+testBasico(7) :- proceso(secuencia(computar, leer(1))).
+testBasico(8) :- proceso(secuencia(computar, escribir(1, a))).
+testBasico(9) :- proceso(secuencia(computar, secuencia(computar, computar))).
+testBasico(10) :- proceso(secuencia(computar, paralelo(computar, computar))).
+
+testBasico(11) :- proceso(secuencia(escribir(1, a), computar)).
+testBasico(12) :- proceso(secuencia(escribir(1, a), leer(1))).
+testBasico(13) :- proceso(secuencia(escribir(1, a), leer(2))).
+testBasico(14) :- proceso(secuencia(escribir(1, a), escribir(1, b))).
+testBasico(15) :- proceso(secuencia(escribir(1, b), secuencia(escribir(1, b), escribir(1, c)))).
+testBasico(16) :- proceso(secuencia(escribir(1, a), paralelo(leer(1), escribir(2, b)))).
+
+testBasico(17) :- proceso(secuencia(computar, secuencia(leer(1), escribir(1, a)))).
+testBasico(18) :- proceso(secuencia(computar, secuencia(paralelo(leer(1), leer(2)), escribir(1, a)))).
+testBasico(19) :- proceso(secuencia(computar, secuencia(paralelo(escribir(1, a), escribir(1, b)), escribir(1, c)))).
+testBasico(20) :- proceso(secuencia(computar, secuencia( secuencia(leer(1), escribir(1, a)), secuencia(leer(1), escribir(1, c))))).
 % Agregar más tests
 
 cantidadTestsProcesos(0). % Actualizar con la cantidad de tests que entreguen
 % Agregar más tests
 
-cantidadTestsBuffers(0). % Actualizar con la cantidad de tests que entreguen
-% Agregar más tests
+cantidadTestsBuffers(10). % Actualizar con la cantidad de tests que entreguen
+
+%ej 2
+testBuffers(1) :- buffersUsados(leer(1), [1]).
+testBuffers(2) :- buffersUsados(escribir(1, a), [1]).
+testBuffers(3) :- buffersUsados(secuencia(leer(1), escribir(1, a)), [1, 1]).
+testBuffers(4) :- buffersUsados(paralelo(leer(1), escribir(2, b)), [1, 2]).
+testBuffers(5) :- buffersUsados(secuencia(secuencia(leer(1), escribir(2, a)), leer(3)), [1, 2, 3]).
+testBuffers(6) :- buffersUsados(paralelo(secuencia(leer(1), escribir(2, a)), escribir(3, b)), [1, 2, 3]).
+testBuffers(7) :- buffersUsados(paralelo(leer(1), paralelo(escribir(2, a), leer(3))), [1, 2, 3]).
+testBuffers(8) :- buffersUsados(secuencia(paralelo(leer(1), escribir(2, b)), paralelo(leer(3), escribir(4, c))), [1, 2, 3, 4]).
+testBuffers(9) :- buffersUsados(secuencia(secuencia(leer(1), escribir(2, a)), secuencia(leer(3), escribir(4, b))), [1, 2, 3, 4]).
+testBuffers(10) :- buffersUsados(paralelo(
+    secuencia(leer(1), escribir(2, a)),
+    secuencia(leer(3), paralelo(leer(4), escribir(5, b)))
+), [1, 2, 3, 4, 5]).
+
+%ej 5
+
+testBuffers(11) :- contenidoBuffer(1, [escribir(1, a), escribir(1,b), leer(1)], [b]).
+testBuffers(12) :- contenidoBuffer(1, [escribir(1, a), escribir(2, b), leer(2)], [a]).
+testBuffers(13) :- contenidoBuffer(1, escribir(1, a), [a]).
+testBuffers(14) :- contenidoBuffer(1, [escribir(1, a)], [a]).
+testBuffers(15) :- contenidoBuffer(1, [escribir(1, a), escribir(1,b), escribir(2, e) ,escribir(1,c)], [a,b,c]).
+testBuffers(16) :- contenidoBuffer(2, [escribir(1, a), escribir(1,b), escribir(2, e) ,escribir(1,c)], [e]).
+testBuffers(17) :- contenidoBuffer(1,  secuencia(escribir(1, a), secuencia(escribir(1, b), secuencia(escribir(2, e), secuencia(escribir(1, c), escribir(3,f))  )) ), [a,b,c]).
+
+testBuffers(18) :- contenidoBuffer(1,  secuencia(escribir(1, a), secuencia(escribir(1, b), secuencia(escribir(2, e), paralelo(escribir(1, c), escribir(3,f))  )) ), [a,b,c]).
+testBuffers(19) :- contenidoBuffer(1,  secuencia(escribir(1, a), secuencia(escribir(1, b), secuencia(escribir(2, e), paralelo(escribir(1, c), escribir(1,d))  )) ), [a,b,c,d]).
+testBuffers(20) :- contenidoBuffer(1,  secuencia(escribir(1, a), secuencia(escribir(1, b), secuencia(escribir(2, e), paralelo(escribir(1, c), escribir(1,d))  )) ), [a,b,d,c]).
+testBuffers(21) :- contenidoBuffer(2,  secuencia(escribir(1, a), secuencia(escribir(1, b), secuencia(escribir(2, e), paralelo(escribir(1, c), escribir(1,d))  )) ), [e]).
+
+testBuffers(22) :- contenidoBuffer(1,  [escribir(1,a), escribir(1,b), escribir(2,e),escribir(1,c), leer(1), escribir(1,d)] , [b,c,d]).
+testBuffers(23) :- contenidoBuffer(2,  [escribir(1,a), escribir(1,b), escribir(2,e),escribir(1,c), leer(1), escribir(2,d)] , [e,d]).
+testBuffers(24) :- contenidoBuffer(2,  [escribir(1,a), escribir(1,b), escribir(2,e),escribir(1,c), leer(2), escribir(2,d)] , [d]).
+
+% FALTAN
 
 cantidadTestsSeguros(0). % Actualizar con la cantidad de tests que entreguen
 % Agregar más tests
