@@ -112,7 +112,7 @@ esOperacionSegura(paralelo(P, Q)) :-
     buffersUsados(Q, BQ),
     intersection(BP, BQ, []). % No deben compartir buffers.
 %% Ejercicio 8
-%% ejecucionSegura( XS,+BS,+CS) - COMPLETAR LA INSTANCIACIÓN DE XS
+%% ejecucionSegura( ?XS,+BS,+CS)
 
 ejecucionSegura([], _,_).
 ejecucionSegura([computar|XS], BS, CS):- esSeguro(XS), ejecucionSegura(XS, BS, CS).
@@ -125,14 +125,35 @@ ejecucionSegura([escribir(B,C)|XS], BS, CS):-esSeguro(XS), member(B, BS), member
 %% 8.1. Analizar la reversibilidad de XS, justificando adecuadamente por qué el predicado se comporta como
 %% lo hace.
 
-
-
+%   Vamos a ver cuando XS esta instanciado y cuando no.
+%   Si XS esta instanciado y es una ejecucion segura que usa
+%   los contenidos y buffers (BS y CS respectivamente) entonces
+%   el predicado termina de manera esperada dando true.
+%   Si XS usamos una instancia que contiene lecturas a buffers
+%   vacios o que no conocemos, o contiene una lectura en paralelo
+%   el predicado nos da false. En otras palabras, el predicado 
+%   se comporta de manera esperada en cada caso donde XS esta
+%   instanciado, no se cuelga.
+%
+%   Si XS no esta instanciado, entonces nos da las infinitas
+%   combinaciones de ejecuciones seguras que podemos conseguir
+%   usando los contenidos y buffers dados. Que es exactamente
+%   lo que queremos conseguir, podemos observar que no se generan
+%   soluciones repetidas.
+%
+%   De esta manera podemos afirmar que XS es reversible efectivamente.
+%   
+%
+%
+%
+%
+%
 %%%%%%%%%%%
 %% TESTS %%
 %%%%%%%%%%%
 
 % Se espera que completen con las subsecciones de tests que crean necesarias, más allá de las puestas en estos ejemplos
-cantidadTestsBasicos(20).
+cantidadTestsBasicos(30).
 
 %ej1
 testBasico(1) :- proceso(computar).
@@ -153,53 +174,64 @@ testBasico(13) :- proceso(secuencia(escribir(1, a), leer(2))).
 testBasico(14) :- proceso(secuencia(escribir(1, a), escribir(1, b))).
 testBasico(15) :- proceso(secuencia(escribir(1, b), secuencia(escribir(1, b), escribir(1, c)))).
 testBasico(16) :- proceso(secuencia(escribir(1, a), paralelo(leer(1), escribir(2, b)))).
-
 testBasico(17) :- proceso(secuencia(computar, secuencia(leer(1), escribir(1, a)))).
 testBasico(18) :- proceso(secuencia(computar, secuencia(paralelo(leer(1), leer(2)), escribir(1, a)))).
 testBasico(19) :- proceso(secuencia(computar, secuencia(paralelo(escribir(1, a), escribir(1, b)), escribir(1, c)))).
 testBasico(20) :- proceso(secuencia(computar, secuencia( secuencia(leer(1), escribir(1, a)), secuencia(leer(1), escribir(1, c))))).
-% Agregar más tests
 
-cantidadTestsProcesos(0). % Actualizar con la cantidad de tests que entreguen
-% Agregar más tests
-
-cantidadTestsBuffers(10). % Actualizar con la cantidad de tests que entreguen
-
-%ej 2
-testBuffers(1) :- buffersUsados(leer(1), [1]).
-testBuffers(2) :- buffersUsados(escribir(1, a), [1]).
-testBuffers(3) :- buffersUsados(secuencia(leer(1), escribir(1, a)), [1, 1]).
-testBuffers(4) :- buffersUsados(paralelo(leer(1), escribir(2, b)), [1, 2]).
-testBuffers(5) :- buffersUsados(secuencia(secuencia(leer(1), escribir(2, a)), leer(3)), [1, 2, 3]).
-testBuffers(6) :- buffersUsados(paralelo(secuencia(leer(1), escribir(2, a)), escribir(3, b)), [1, 2, 3]).
-testBuffers(7) :- buffersUsados(paralelo(leer(1), paralelo(escribir(2, a), leer(3))), [1, 2, 3]).
-testBuffers(8) :- buffersUsados(secuencia(paralelo(leer(1), escribir(2, b)), paralelo(leer(3), escribir(4, c))), [1, 2, 3, 4]).
-testBuffers(9) :- buffersUsados(secuencia(secuencia(leer(1), escribir(2, a)), secuencia(leer(3), escribir(4, b))), [1, 2, 3, 4]).
-testBuffers(10) :- buffersUsados(paralelo(
+%% ej 2
+testBasico(21) :- buffersUsados(leer(1), [1]).
+testBasico(22) :- buffersUsados(escribir(1, a), [1]).
+testBasico(23) :- buffersUsados(secuencia(leer(1), escribir(1, a)), [1, 1]).
+testBasico(24) :- buffersUsados(paralelo(leer(1), escribir(2, b)), [1, 2]).
+testBasico(25) :- buffersUsados(secuencia(secuencia(leer(1), escribir(2, a)), leer(3)), [1, 2, 3]).
+testBasico(26) :- buffersUsados(paralelo(secuencia(leer(1), escribir(2, a)), escribir(3, b)), [1, 2, 3]).
+testBasico(27) :- buffersUsados(paralelo(leer(1), paralelo(escribir(2, a), leer(3))), [1, 2, 3]).
+testBasico(28) :- buffersUsados(secuencia(paralelo(leer(1), escribir(2, b)), paralelo(leer(3), escribir(4, c))), [1, 2, 3, 4]).
+testBasico(29) :- buffersUsados(secuencia(secuencia(leer(1), escribir(2, a)), secuencia(leer(3), escribir(4, b))), [1, 2, 3, 4]).
+testBasico(30) :- buffersUsados(paralelo(
     secuencia(leer(1), escribir(2, a)),
     secuencia(leer(3), paralelo(leer(4), escribir(5, b)))
 ), [1, 2, 3, 4, 5]).
 
+
+cantidadTestsProcesos(8). % Actualizar con la cantidad de tests que entreguen
+
+testProcesos(1) :- intercalar([1,2,3],[4,5,6],[1,2,3,4,5,6]).
+testProcesos(2) :- intercalar([],[4,5,6],[4,5,6]).
+testProcesos(3) :- intercalar([],[],[]).
+testProcesos(4) :- intercalar([1],[4],[4,1]).
+testProcesos(5) :- intercalar([[computar],[1,2],4],[3],[[computar], [1, 2], 4, 3]).
+testProcesos(6) :- serializar(secuencia(computar,leer(2)),[computar,leer(2)]).
+testProcesos(7) :- serializar(paralelo(paralelo(leer(1),leer(2)),secuencia(leer(3),leer(4))),[leer(2),leer(3),leer(1),leer(4)]).
+testProcesos(8) :- serializar(secuencia(secuencia(leer(1),leer(2)),paralelo(computar,escribir(4,a))),[leer(1),leer(2),escribir(4,a),computar]).
+testProcesos(9) :- serializar(paralelo(paralelo(leer(1),leer(2)),paralelo(paralelo(leer(3),leer(4)),paralelo(computar,escribir(1,s)))),[leer(3), leer(4), computar, escribir(1, s), leer(1), leer(2)]).
+
+cantidadTestsBuffers(16). % Actualizar con la cantidad de tests que entreguen
+
+%ej 2
+
 %ej 5
 
-testBuffers(11) :- contenidoBuffer(1, [escribir(1, a), escribir(1,b), leer(1)], [b]).
-testBuffers(12) :- contenidoBuffer(1, [escribir(1, a), escribir(2, b), leer(2)], [a]).
-testBuffers(13) :- contenidoBuffer(1, escribir(1, a), [a]).
-testBuffers(14) :- contenidoBuffer(1, [escribir(1, a)], [a]).
-testBuffers(15) :- contenidoBuffer(1, [escribir(1, a), escribir(1,b), escribir(2, e) ,escribir(1,c)], [a,b,c]).
-testBuffers(16) :- contenidoBuffer(2, [escribir(1, a), escribir(1,b), escribir(2, e) ,escribir(1,c)], [e]).
-testBuffers(17) :- contenidoBuffer(1,  secuencia(escribir(1, a), secuencia(escribir(1, b), secuencia(escribir(2, e), secuencia(escribir(1, c), escribir(3,f))  )) ), [a,b,c]).
+testBuffers(1) :- contenidoBuffer(1, [escribir(1, a), escribir(1,b), leer(1)], [b]).
+testBuffers(2) :- contenidoBuffer(1, [escribir(1, a), escribir(2, b), leer(2)], [a]).
+testBuffers(3) :- contenidoBuffer(1, escribir(1, a), [a]).
+testBuffers(4) :- contenidoBuffer(1, [escribir(1, a)], [a]).
+testBuffers(5) :- contenidoBuffer(1, [escribir(1, a), escribir(1,b), escribir(2, e) ,escribir(1,c)], [a,b,c]).
+testBuffers(6) :- contenidoBuffer(2, [escribir(1, a), escribir(1,b), escribir(2, e) ,escribir(1,c)], [e]).
+testBuffers(7) :- contenidoBuffer(1,  secuencia(escribir(1, a), secuencia(escribir(1, b), secuencia(escribir(2, e), secuencia(escribir(1, c), escribir(3,f))  )) ), [a,b,c]).
 
-testBuffers(18) :- contenidoBuffer(1,  secuencia(escribir(1, a), secuencia(escribir(1, b), secuencia(escribir(2, e), paralelo(escribir(1, c), escribir(3,f))  )) ), [a,b,c]).
-testBuffers(19) :- contenidoBuffer(1,  secuencia(escribir(1, a), secuencia(escribir(1, b), secuencia(escribir(2, e), paralelo(escribir(1, c), escribir(1,d))  )) ), [a,b,c,d]).
-testBuffers(20) :- contenidoBuffer(1,  secuencia(escribir(1, a), secuencia(escribir(1, b), secuencia(escribir(2, e), paralelo(escribir(1, c), escribir(1,d))  )) ), [a,b,d,c]).
-testBuffers(21) :- contenidoBuffer(2,  secuencia(escribir(1, a), secuencia(escribir(1, b), secuencia(escribir(2, e), paralelo(escribir(1, c), escribir(1,d))  )) ), [e]).
+testBuffers(8) :- contenidoBuffer(1,  secuencia(escribir(1, a), secuencia(escribir(1, b), secuencia(escribir(2, e), paralelo(escribir(1, c), escribir(3,f))  )) ), [a,b,c]).
+testBuffers(9) :- contenidoBuffer(1,  secuencia(escribir(1, a), secuencia(escribir(1, b), secuencia(escribir(2, e), paralelo(escribir(1, c), escribir(1,d))  )) ), [a,b,c,d]).
+testBuffers(10) :- contenidoBuffer(1,  secuencia(escribir(1, a), secuencia(escribir(1, b), secuencia(escribir(2, e), paralelo(escribir(1, c), escribir(1,d))  )) ), [a,b,d,c]).
+testBuffers(11) :- contenidoBuffer(2,  secuencia(escribir(1, a), secuencia(escribir(1, b), secuencia(escribir(2, e), paralelo(escribir(1, c), escribir(1,d))  )) ), [e]).
 
-testBuffers(22) :- contenidoBuffer(1,  [escribir(1,a), escribir(1,b), escribir(2,e),escribir(1,c), leer(1), escribir(1,d)] , [b,c,d]).
-testBuffers(23) :- contenidoBuffer(2,  [escribir(1,a), escribir(1,b), escribir(2,e),escribir(1,c), leer(1), escribir(2,d)] , [e,d]).
-testBuffers(24) :- contenidoBuffer(2,  [escribir(1,a), escribir(1,b), escribir(2,e),escribir(1,c), leer(2), escribir(2,d)] , [d]).
-
-% FALTAN
+testBuffers(12) :- contenidoBuffer(1,  [escribir(1,a), escribir(1,b), escribir(2,e),escribir(1,c), leer(1), escribir(1,d)] , [b,c,d]).
+testBuffers(13) :- contenidoBuffer(2,  [escribir(1,a), escribir(1,b), escribir(2,e),escribir(1,c), leer(1), escribir(2,d)] , [e,d]).
+testBuffers(14) :- contenidoBuffer(2,  [escribir(1,a), escribir(1,b), escribir(2,e),escribir(1,c), leer(2), escribir(2,d)] , [d]).
+testBuffers(15) :- not(contenidoBuffer(1,[escribir(1,a),leer(1),leer(1)],X)). %% lectura incorrecta da false
+testBuffers(16) :- contenidoBuffer(1, [escribir(1, a), escribir(1,b), escribir(2, e) ,escribir(1,c),leer(3),leer(3)], [a,b,c]).
+%% si la lectura es incorrecta en otro buffer no me importa
 
 cantidadTestsSeguros(0). % Actualizar con la cantidad de tests que entreguen
 % Agregar más tests
