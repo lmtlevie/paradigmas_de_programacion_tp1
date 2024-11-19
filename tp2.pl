@@ -85,12 +85,8 @@ contenidoAplanadoLeido(  [escribir(_, _) | XS], C ) :- contenidoAplanadoLeido(XS
 esSeguro([]).
 esSeguro(escribir(_, _)).
 esSeguro(computar).
-esSeguro(leer(_)).
-esSeguro([escribir(_, _)]).
-esSeguro([computar]).
-esSeguro([leer(_)]).
 esSeguro([X|XS]) :- contenidoLeido([X|XS], C).
-esSeguro(secuencia(P,Q)) :- esSeguro(P), esSeguro(Q) ,  forall( aplanarProceso(secuencia(P,Q), PC), contenidoLeido(PC, C) ). 
+esSeguro(secuencia(P,Q)) :- forall( aplanarProceso(secuencia(P,Q), PC), contenidoLeido(PC, C) ). 
 esSeguro( paralelo(P,Q) ) :- forall( aplanarProceso(paralelo(P,Q), PC), contenidoLeido(PC, C) ), buffersUsados(P, BP), buffersUsados(Q,BQ), intersection(BP, BQ, []).
 
 %% esOperacionMinimalSegura(+X)
