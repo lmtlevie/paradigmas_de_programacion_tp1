@@ -5,8 +5,8 @@
 %% Ejercicio 1
 %% proceso(+P)
 proceso(computar).
-proceso(leer(B)).
-proceso(escribir(B,X)).
+proceso(leer(_)).
+proceso(escribir(_,_)).
 proceso(secuencia(P,Q)) :- proceso(P),proceso(Q).
 proceso(paralelo(P,Q)) :- proceso(P),proceso(Q).
 
@@ -56,12 +56,12 @@ aplanarProceso(paralelo(P,Q), RS) :- aplanarProceso(P, PS), aplanarProceso(Q, QS
 aplanarProceso( [X| XS], RS ) :- aplanarProceso(X, XR), aplanarProceso(XS, XSR), append(XR, XSR, RS).
 
 %% contenidoInversoBuffer(+B,+P,?C)
-contenidoInversoBuffer(B, [], []).
+contenidoInversoBuffer(_, [], []).
 contenidoInversoBuffer(B, [computar | XS], C) :- contenidoInversoBuffer(B,XS,C).
 contenidoInversoBuffer(B,[leer(B)|XS],C) :- member(escribir(B, _), XS), !, contenidoInversoBuffer(B,XS,L), append( C, [_], L). %member devuelve true para distintas escrituras por eso está el '!'.
 contenidoInversoBuffer(B1,[leer(B2)|XS],C) :- B1 \= B2, contenidoInversoBuffer(B1,XS,C).
 contenidoInversoBuffer(B,[escribir(B,P)|XS],[P|C]) :- contenidoInversoBuffer(B,XS,C).
-contenidoInversoBuffer(B1,[escribir(B2,P)|XS],C) :- B1 \= B2,contenidoInversoBuffer(B1,XS,C).
+contenidoInversoBuffer(B1,[escribir(B2,_)|XS],C) :- B1 \= B2,contenidoInversoBuffer(B1,XS,C).
 
 %% Ejercicio 6
 %% contenidoLeido(+ProcesoOLista,?Contenidos)
@@ -85,9 +85,9 @@ contenidoAplanadoLeido(  [escribir(_, _) | XS], C ) :- contenidoAplanadoLeido(XS
 esSeguro([]).
 esSeguro(escribir(_, _)).
 esSeguro(computar).
-esSeguro([X|XS]) :- contenidoLeido([X|XS], C).
-esSeguro(secuencia(P,Q)) :- forall( aplanarProceso(secuencia(P,Q), PC), contenidoLeido(PC, C) ). 
-esSeguro( paralelo(P,Q) ) :- forall( aplanarProceso(paralelo(P,Q), PC), contenidoLeido(PC, C) ), buffersUsados(P, BP), buffersUsados(Q,BQ), intersection(BP, BQ, []).
+esSeguro([X|XS]) :- contenidoLeido([X|XS], _).
+esSeguro(secuencia(P,Q)) :- forall( aplanarProceso(secuencia(P,Q), PC), contenidoLeido(PC, _) ). 
+esSeguro( paralelo(P,Q) ) :- forall( aplanarProceso(paralelo(P,Q), PC), contenidoLeido(PC, _) ), buffersUsados(P, BP), buffersUsados(Q,BQ), intersection(BP, BQ, []).
 
 %% esOperacionMinimalSegura(+X)
 esOperacionMinimalSegura(leer(_)).
@@ -112,9 +112,9 @@ esOperacionSegura(paralelo(P, Q)) :-
 ejecucionSegura(XS, BS, CS):- generarEjecucion(XS, BS, CS), esSeguro(XS).
 
 %% generarOperacionMinimalSegura(?X,+CS,+BS)
-generarOperacionMinimalSegura( computar , CS, BS ).  
+generarOperacionMinimalSegura( computar , _, _ ).  
 generarOperacionMinimalSegura( escribir(B, C), CS, BS ) :- member(B, BS), member(C,CS).  
-generarOperacionMinimalSegura( leer(B) , CS, BS ) :- member(B, BS).  
+generarOperacionMinimalSegura( leer(B) , _, BS ) :- member(B, BS).  
 
 %% generarEjecucion(?XS,+BS,+CS)
 generarEjecucion( [], _ , _).
@@ -237,13 +237,13 @@ testBuffers(11) :- contenidoBuffer(2,  secuencia(escribir(1, a), secuencia(escri
 testBuffers(12) :- contenidoBuffer(1,  [escribir(1,a), escribir(1,b), escribir(2,e),escribir(1,c), leer(1), escribir(1,d)] , [b,c,d]).
 testBuffers(13) :- contenidoBuffer(2,  [escribir(1,a), escribir(1,b), escribir(2,e),escribir(1,c), leer(1), escribir(2,d)] , [e,d]).
 testBuffers(14) :- contenidoBuffer(2,  [escribir(1,a), escribir(1,b), escribir(2,e),escribir(1,c), leer(2), escribir(2,d)] , [d]).
-testBuffers(15) :- not(contenidoBuffer(1,[escribir(1,a),leer(1),leer(1)],X)). %% lectura incorrecta da false
+testBuffers(15) :- not(contenidoBuffer(1,[escribir(1,a),leer(1),leer(1)],_)). %% lectura incorrecta da false
 testBuffers(16) :- contenidoBuffer(1, [escribir(1, a), escribir(1,b), escribir(2, e) ,escribir(1,c),leer(3),leer(3)], [a,b,c]).
 %% si la lectura es incorrecta en otro buffer no me importa
 
 %%  ej 6
 testBuffers(17) :- contenidoLeido(paralelo(secuencia(escribir(2,sol),leer(2)),secuencia(escribir(1,agua),leer(1))),[sol,agua]).
-testBuffers(18) :- not(contenidoLeido([escribir(1, agua), escribir(2, sol), leer(1), leer(1)],CS)).
+testBuffers(18) :- not(contenidoLeido([escribir(1, agua), escribir(2, sol), leer(1), leer(1)],_)).
 testBuffers(19) :- contenidoLeido(paralelo(secuencia(escribir(2,sol),secuencia(leer(2),escribir(2,agua))),secuencia(leer(2),computar)), [sol, agua] ).
 testBuffers(20) :- contenidoLeido([escribir(1,a),escribir(1,b),leer(1)],[b]).
 testBuffers(21) :- contenidoLeido([escribir(1,a),escribir(1,b),escribir(2,c),escribir(8,d),computar],[]).
