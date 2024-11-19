@@ -43,40 +43,35 @@ serializar(paralelo(P,Q),XS) :- serializar(P,R1),serializar(Q,R2),intercalar(R1,
 
 %% Ejercicio 5
 %% contenidoInversoBuffer(+B,+ProcesoOLista,?Contenidos)
+contenidoBuffer(B, PS, C) :- aplanarProceso(PS, GU), reverse(GU, RS), contenidoInversoBuffer(B, RS, C1), reverse(C1, C).
+%contenidoBufer tiene en PS las cosas que van a pasar, ContenidoInversoBuffer tiene en PS lo que pasó. 
 
+%% aplanarProceso(+P,-G)
 aplanarProceso( [],[] ).
 aplanarProceso( computar,[] ).
 aplanarProceso( escribir(B, P) ,[escribir(B, P) ] ).
 aplanarProceso( leer(B),[leer(B)] ).
 aplanarProceso(secuencia(P,Q), RS) :- aplanarProceso(P, PS), aplanarProceso(Q, QS), append(PS, QS, RS). 
 aplanarProceso(paralelo(P,Q), RS) :- aplanarProceso(P, PS), aplanarProceso(Q, QS), intercalar(PS, QS, RS). 
-
 aplanarProceso( [X| XS], RS ) :- aplanarProceso(X, XR), aplanarProceso(XS, XSR), append(XR, XSR, RS).
 
-
+%% contenidoInversoBuffer(+B,+P,?C)
 contenidoInversoBuffer(B, [], []).
-%contenidoInversoBuffer(B, computar, []). 
-%contenidoInversoBuffer(B, escribir(B, P), [P]).
-%contenidoInversoBuffer(B1, escribir(B2, F), []):- B1 \= B2.
-
 contenidoInversoBuffer(B, [computar | XS], C) :- contenidoInversoBuffer(B,XS,C).
 contenidoInversoBuffer(B,[leer(B)|XS],C) :- member(escribir(B, _), XS), !, contenidoInversoBuffer(B,XS,L), append( C, [_], L). %member devuelve true para distintas escrituras por eso está el '!'.
 contenidoInversoBuffer(B1,[leer(B2)|XS],C) :- B1 \= B2, contenidoInversoBuffer(B1,XS,C).
-
 contenidoInversoBuffer(B,[escribir(B,P)|XS],[P|C]) :- contenidoInversoBuffer(B,XS,C).
 contenidoInversoBuffer(B1,[escribir(B2,P)|XS],C) :- B1 \= B2,contenidoInversoBuffer(B1,XS,C).
 
-contenidoBuffer(B, PS, C) :- aplanarProceso(PS, GU), reverse(GU, RS), contenidoInversoBuffer(B, RS, C1), reverse(C1, C).
-%contenidoBufer tiene en PS las cosas que van a pasar, ContenidoInversoBuffer tiene en PS lo que pasó. 
-
-
 %% Ejercicio 6
 %% contenidoLeido(+ProcesoOLista,?Contenidos)
+contenidoLeido( POL , C) :- aplanarProceso(POL, APOL), reverse(APOL, RAPOL), contenidoAplanadoLeido(RAPOL, CR), reverse(CR, C).
+
+%% contenidoAplanadoLeido(+P,-C)
 contenidoAplanadoLeido( [], []).
 contenidoAplanadoLeido( [leer(B) | XS], C) :-select( escribir(B,CACA), XS, XSSC),!,  contenidoAplanadoLeido(XSSC, RS), append([CACA], RS, C).
 contenidoAplanadoLeido(  [escribir(_, _) | XS], C ) :- contenidoAplanadoLeido(XS, C).
 
-contenidoLeido( POL , C) :- aplanarProceso(POL, APOL), reverse(APOL, RAPOL), contenidoAplanadoLeido(RAPOL, CR), reverse(CR, C).
 
 
 
@@ -88,22 +83,26 @@ contenidoLeido( POL , C) :- aplanarProceso(POL, APOL), reverse(APOL, RAPOL), con
 %% Ejercicio 7
 %% esSeguro(+P)
 esSeguro([]).
+esSeguro(escribir(_, _)).
+esSeguro(computar).
+esSeguro(leer(_)).
+esSeguro([escribir(_, _)]).
+esSeguro([computar]).
+esSeguro([leer(_)]).
+esSeguro([X|XS]) :- contenidoLeido([X|XS], C).
+esSeguro(secuencia(P,Q)) :- esSeguro(P), esSeguro(Q) ,  forall( aplanarProceso(secuencia(P,Q), PC), contenidoLeido(PC, C) ). 
+esSeguro( paralelo(P,Q) ) :- forall( aplanarProceso(paralelo(P,Q), PC), contenidoLeido(PC, C) ), buffersUsados(P, BP), buffersUsados(Q,BQ), intersection(BP, BQ, []).
 
-% Verifica cada operación en la lista.
-esSeguro([ X| XS]):-esSeguro(XS), esOperacionMinimalSegura(X).
-esSeguro([X | XS]) :-
-    esSeguro(XS),           % Verifica recursivamente el resto de la lista.
-    esOperacionSegura(X). % Verifica si la operación X es segura.
-
+%% esOperacionMinimalSegura(+X)
 esOperacionMinimalSegura(leer(_)).
 esOperacionMinimalSegura(escribir(_, _)).
 esOperacionMinimalSegura(computar).
 
+%% esOperacionSegura(+X)
 esOperacionSegura(secuencia(P, Q)) :-
-    esSeguro(P), % Ambos procesos deben ser seguros.
+    esSeguro(P), 
     esSeguro(Q),
     forall(aplanarProceso(secuencia(P, Q), PC), contenidoLeido(PC, _)).
-
 esOperacionSegura(paralelo(P, Q)) :-
     esSeguro(P),
     esSeguro(Q),
@@ -111,14 +110,19 @@ esOperacionSegura(paralelo(P, Q)) :-
     buffersUsados(P, BP),
     buffersUsados(Q, BQ),
     intersection(BP, BQ, []). % No deben compartir buffers.
+
 %% Ejercicio 8
-%% ejecucionSegura( ?XS,+BS,+CS)
+%% ejecucionSegura(?XS,+BS,+CS)
+ejecucionSegura(XS, BS, CS):- generarEjecucion(XS, BS, CS), esSeguro(XS).
 
-ejecucionSegura([], _,_).
-ejecucionSegura([computar|XS], BS, CS):- esSeguro(XS), ejecucionSegura(XS, BS, CS).
-ejecucionSegura([leer(B)|XS], BS, CS):- esSeguro(XS), member(B, BS), ejecucionSegura(XS, BS, CS).
-ejecucionSegura([escribir(B,C)|XS], BS, CS):-esSeguro(XS), member(B, BS), member(C,CS), ejecucionSegura(XS, BS, CS).
+%% generarOperacionMinimalSegura(?X,+CS,+BS)
+generarOperacionMinimalSegura( computar , CS, BS ).  
+generarOperacionMinimalSegura( escribir(B, C), CS, BS ) :- member(B, BS), member(C,CS).  
+generarOperacionMinimalSegura( leer(B) , CS, BS ) :- member(B, BS).  
 
+%% generarEjecucion(?XS,+BS,+CS)
+generarEjecucion( [], _ , _).
+generarEjecucion( [X| XS], BS, CS) :-generarEjecucion(XS,BS, CS), generarOperacionMinimalSegura(X, CS, BS).
 
 
 
@@ -133,13 +137,14 @@ ejecucionSegura([escribir(B,C)|XS], BS, CS):-esSeguro(XS), member(B, BS), member
 %   vacios o que no conocemos, o contiene una lectura en paralelo
 %   el predicado nos da false. En otras palabras, el predicado 
 %   se comporta de manera esperada en cada caso donde XS esta
-%   instanciado, no se cuelga.
+%   instanciado, no se cuelga. En los dos casos estamos verificando que XS
+%   es una posible ejecucion y luego lo testeamos viendo si es segura.
 %
 %   Si XS no esta instanciado, entonces nos da las infinitas
 %   combinaciones de ejecuciones seguras que podemos conseguir
 %   usando los contenidos y buffers dados. Que es exactamente
 %   lo que queremos conseguir, podemos observar que no se generan
-%   soluciones repetidas.
+%   soluciones repetidas. 
 %
 %   De esta manera podemos afirmar que XS es reversible efectivamente.
 %   
@@ -207,12 +212,9 @@ testProcesos(7) :- serializar(paralelo(paralelo(leer(1),leer(2)),secuencia(leer(
 testProcesos(8) :- serializar(secuencia(secuencia(leer(1),leer(2)),paralelo(computar,escribir(4,a))),[leer(1),leer(2),escribir(4,a),computar]).
 testProcesos(9) :- serializar(paralelo(paralelo(leer(1),leer(2)),paralelo(paralelo(leer(3),leer(4)),paralelo(computar,escribir(1,s)))),[leer(3), leer(4), computar, escribir(1, s), leer(1), leer(2)]).
 
-cantidadTestsBuffers(16). % Actualizar con la cantidad de tests que entreguen
-
-%ej 2
+cantidadTestsBuffers(21). % Actualizar con la cantidad de tests que entreguen
 
 %ej 5
-
 testBuffers(1) :- contenidoBuffer(1, [escribir(1, a), escribir(1,b), leer(1)], [b]).
 testBuffers(2) :- contenidoBuffer(1, [escribir(1, a), escribir(2, b), leer(2)], [a]).
 testBuffers(3) :- contenidoBuffer(1, escribir(1, a), [a]).
@@ -233,9 +235,37 @@ testBuffers(15) :- not(contenidoBuffer(1,[escribir(1,a),leer(1),leer(1)],X)). %%
 testBuffers(16) :- contenidoBuffer(1, [escribir(1, a), escribir(1,b), escribir(2, e) ,escribir(1,c),leer(3),leer(3)], [a,b,c]).
 %% si la lectura es incorrecta en otro buffer no me importa
 
-cantidadTestsSeguros(0). % Actualizar con la cantidad de tests que entreguen
+%%  ej 6
+testBuffers(17) :- contenidoLeido(paralelo(secuencia(escribir(2,sol),leer(2)),secuencia(escribir(1,agua),leer(1))),[sol,agua]).
+testBuffers(18) :- not(contenidoLeido([escribir(1, agua), escribir(2, sol), leer(1), leer(1)],CS)).
+testBuffers(19) :- contenidoLeido(paralelo(secuencia(escribir(2,sol),secuencia(leer(2),escribir(2,agua))),secuencia(leer(2),computar)), [sol, agua] ).
+testBuffers(20) :- contenidoLeido([escribir(1,a),escribir(1,b),leer(1)],[b]).
+testBuffers(21) :- contenidoLeido([escribir(1,a),escribir(1,b),escribir(2,c),escribir(8,d),computar],[]).
+
+
+cantidadTestsSeguros(14). % Actualizar con la cantidad de tests que entreguen
 % Agregar más tests
 
+%% ej 7
+testSeguros(1) :- not(esSeguro(secuencia(leer(1),escribir(1,agua)))).
+testSeguros(2) :- esSeguro(secuencia(escribir(1,agua),leer(1))).
+testSeguros(3) :- not(esSeguro(paralelo(escribir(1,sol),secuencia(escribir(1,agua),leer(1))))).
+testSeguros(4) :- esSeguro(paralelo(escribir(2,sol),secuencia(escribir(1,agua),leer(1)))).
+testSeguros(5) :- esSeguro(paralelo(escribir(1,a),escribir(2,b))).
+testSeguros(6) :- esSeguro(secuencia(escribir(1,a),escribir(2,b))).
+testSeguros(7) :- not(esSeguro(paralelo(escribir(2,sol),escribir(2,papa)))).
+testSeguros(8) :- esSeguro(secuencia(computar,secuencia(computar,paralelo(escribir(1,a),computar)))).
+
+
+%% ej 8
+
+testSeguros(9) :- ejecucionSegura([computar],[1,2],[a,b]).
+testSeguros(10) :- ejecucionSegura([escribir(1,a),escribir(1,b)],[1,2],[a,b]).
+testSeguros(11) :- ejecucionSegura([escribir(1,b),leer(1),escribir(2,b),leer(2)],[1,2],[a,b]).
+testSeguros(11) :- ejecucionSegura([computar,computar,computar],[],[]).
+testSeguros(12) :- ejecucionSegura([escribir(1, b), leer(1), escribir(1, b)],[1],[b]).
+testSeguros(13) :-not(ejecucionSegura([leer(1),escribir(1,b)],[1],[b])).
+testSeguros(14) :- not(ejecucionSegura([leer(1)],[1],[b])).
 
 tests(basico) :- cantidadTestsBasicos(M), forall(between(1,M,N), testBasico(N)).
 tests(procesos) :- cantidadTestsProcesos(M), forall(between(1,M,N), testProcesos(N)).
@@ -249,5 +279,3 @@ tests(todos) :-
   tests(seguros).
 
 tests :- tests(todos).
-
-
