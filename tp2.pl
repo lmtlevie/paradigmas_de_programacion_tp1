@@ -55,9 +55,6 @@ aplanarProceso( [X| XS], RS ) :- aplanarProceso(X, XR), aplanarProceso(XS, XSR),
 
 
 contenidoInversoBuffer(B, [], []).
-%contenidoInversoBuffer(B, computar, []). 
-%contenidoInversoBuffer(B, escribir(B, P), [P]).
-%contenidoInversoBuffer(B1, escribir(B2, F), []):- B1 \= B2.
 
 contenidoInversoBuffer(B, [computar | XS], C) :- contenidoInversoBuffer(B,XS,C).
 contenidoInversoBuffer(B,[leer(B)|XS],C) :- member(escribir(B, _), XS), !, contenidoInversoBuffer(B,XS,L), append( C, [_], L). %member devuelve true para distintas escrituras por eso está el '!'.
@@ -87,20 +84,24 @@ contenidoLeido( POL , C) :- aplanarProceso(POL, APOL), reverse(APOL, RAPOL), con
 
 %% Ejercicio 7
 %% esSeguro(+P)
-esSeguro([]).
 
-% Verifica cada operación en la lista.
-esSeguro([ X| XS]):-esSeguro(XS), esOperacionMinimalSegura(X).
-esSeguro([X | XS]) :-
-    esSeguro(XS),           % Verifica recursivamente el resto de la lista.
-    esOperacionSegura(X). % Verifica si la operación X es segura.
+esSeguro([]).
+esSeguro(escribir(_, _)).
+esSeguro(computar).
+esSeguro(leer(_)).
+esSeguro([escribir(_, _)]).
+esSeguro([computar]).
+esSeguro([leer(_)]).
+esSeguro([X|XS]) :- contenidoLeido([X|XS], C).
+esSeguro(secuencia(P,Q)) :- esSeguro(P), esSeguro(Q) ,  forall( aplanarProceso(secuencia(P,Q), PC), contenidoLeido(PC, C) ). 
+esSeguro( paralelo(P,Q) ) :- forall( aplanarProceso(paralelo(P,Q), PC), contenidoLeido(PC, C) ), buffersUsados(P, BP), buffersUsados(Q,BQ), intersection(BP, BQ, []).
 
 esOperacionMinimalSegura(leer(_)).
 esOperacionMinimalSegura(escribir(_, _)).
 esOperacionMinimalSegura(computar).
 
 esOperacionSegura(secuencia(P, Q)) :-
-    esSeguro(P), % Ambos procesos deben ser seguros.
+    esSeguro(P), 
     esSeguro(Q),
     forall(aplanarProceso(secuencia(P, Q), PC), contenidoLeido(PC, _)).
 
@@ -113,12 +114,13 @@ esOperacionSegura(paralelo(P, Q)) :-
     intersection(BP, BQ, []). % No deben compartir buffers.
 %% Ejercicio 8
 %% ejecucionSegura( XS,+BS,+CS) - COMPLETAR LA INSTANCIACIÓN DE XS
+generarOperacionMinimalSegura( computar , CS, BS ).  
+generarOperacionMinimalSegura( escribir(B, C), CS, BS ) :- member(B, BS), member(C,CS).  
+generarOperacionMinimalSegura( leer(B) , CS, BS ) :- member(B, BS).  
 
-ejecucionSegura([], _,_).
-ejecucionSegura([computar|XS], BS, CS):- esSeguro(XS), ejecucionSegura(XS, BS, CS).
-ejecucionSegura([leer(B)|XS], BS, CS):- esSeguro(XS), member(B, BS), ejecucionSegura(XS, BS, CS).
-ejecucionSegura([escribir(B,C)|XS], BS, CS):-esSeguro(XS), member(B, BS), member(C,CS), ejecucionSegura(XS, BS, CS).
-
+generarEjecucion( [], _ , _).
+generarEjecucion( [X| XS], BS, CS) :-generarEjecucion(XS,BS, CS), generarOperacionMinimalSegura(X, CS, BS).
+ejecucionSegura(XS, BS, CS):- generarEjecucion(XS, BS, CS), esSeguro(XS).
 
 
 
