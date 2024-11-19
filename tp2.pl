@@ -69,7 +69,7 @@ contenidoLeido( POL , C) :- aplanarProceso(POL, APOL), reverse(APOL, RAPOL), con
 
 %% contenidoAplanadoLeido(+P,-C)
 contenidoAplanadoLeido( [], []).
-contenidoAplanadoLeido( [leer(B) | XS], C) :-select( escribir(B,CACA), XS, XSSC),!,  contenidoAplanadoLeido(XSSC, RS), append([CACA], RS, C).
+contenidoAplanadoLeido( [leer(B) | XS], C) :-select( escribir(B,P), XS, XSSC),!,  contenidoAplanadoLeido(XSSC, RS), append([P], RS, C).
 contenidoAplanadoLeido(  [escribir(_, _) | XS], C ) :- contenidoAplanadoLeido(XS, C).
 
 
@@ -154,7 +154,7 @@ generarEjecucion( [X| XS], BS, CS) :-generarEjecucion(XS,BS, CS), generarOperaci
 %%%%%%%%%%%
 
 % Se espera que completen con las subsecciones de tests que crean necesarias, más allá de las puestas en estos ejemplos
-cantidadTestsBasicos(30).
+cantidadTestsBasicos(34).
 
 %ej1
 testBasico(1) :- proceso(computar).
@@ -179,34 +179,44 @@ testBasico(17) :- proceso(secuencia(computar, secuencia(leer(1), escribir(1, a))
 testBasico(18) :- proceso(secuencia(computar, secuencia(paralelo(leer(1), leer(2)), escribir(1, a)))).
 testBasico(19) :- proceso(secuencia(computar, secuencia(paralelo(escribir(1, a), escribir(1, b)), escribir(1, c)))).
 testBasico(20) :- proceso(secuencia(computar, secuencia( secuencia(leer(1), escribir(1, a)), secuencia(leer(1), escribir(1, c))))).
-
+testBasico(21) :- not(proceso(plp)).
+testBasico(22) :- not(proceso(secuencia(computar, secuencia( secuencia(leer(1), escribir(1, a)), secuencia(peluche, escribir(1, c)))))).
 %% ej 2
-testBasico(21) :- buffersUsados(leer(1), [1]).
-testBasico(22) :- buffersUsados(escribir(1, a), [1]).
-testBasico(23) :- buffersUsados(secuencia(leer(1), escribir(1, a)), [1, 1]).
-testBasico(24) :- buffersUsados(paralelo(leer(1), escribir(2, b)), [1, 2]).
-testBasico(25) :- buffersUsados(secuencia(secuencia(leer(1), escribir(2, a)), leer(3)), [1, 2, 3]).
-testBasico(26) :- buffersUsados(paralelo(secuencia(leer(1), escribir(2, a)), escribir(3, b)), [1, 2, 3]).
-testBasico(27) :- buffersUsados(paralelo(leer(1), paralelo(escribir(2, a), leer(3))), [1, 2, 3]).
-testBasico(28) :- buffersUsados(secuencia(paralelo(leer(1), escribir(2, b)), paralelo(leer(3), escribir(4, c))), [1, 2, 3, 4]).
-testBasico(29) :- buffersUsados(secuencia(secuencia(leer(1), escribir(2, a)), secuencia(leer(3), escribir(4, b))), [1, 2, 3, 4]).
-testBasico(30) :- buffersUsados(paralelo(
+testBasico(23) :- buffersUsados(leer(1), [1]).
+testBasico(24) :- buffersUsados(escribir(1, a), [1]).
+testBasico(25) :- buffersUsados(secuencia(leer(1), escribir(1, a)), [1, 1]).
+testBasico(26) :- buffersUsados(paralelo(leer(1), escribir(2, b)), [1, 2]).
+testBasico(27) :- buffersUsados(secuencia(secuencia(leer(1), escribir(2, a)), leer(3)), [1, 2, 3]).
+testBasico(28) :- buffersUsados(paralelo(secuencia(leer(1), escribir(2, a)), escribir(3, b)), [1, 2, 3]).
+testBasico(29) :- buffersUsados(paralelo(leer(1), paralelo(escribir(2, a), leer(3))), [1, 2, 3]).
+testBasico(30) :- buffersUsados(secuencia(paralelo(leer(1), escribir(2, b)), paralelo(leer(3), escribir(4, c))), [1, 2, 3, 4]).
+testBasico(31) :- buffersUsados(secuencia(secuencia(leer(1), escribir(2, a)), secuencia(leer(3), escribir(4, b))), [1, 2, 3, 4]).
+testBasico(32) :- buffersUsados(paralelo(
     secuencia(leer(1), escribir(2, a)),
     secuencia(leer(3), paralelo(leer(4), escribir(5, b)))
 ), [1, 2, 3, 4, 5]).
+testBasico(33) :- not(buffersUsados(paralelo(leer(1), paralelo(escribir(2, a), leer(3))), [])).
+testBasico(33) :- not(buffersUsados(paralelo(leer(1), paralelo(escribir(2, a), leer(3))), [1])).
+testBasico(34) :- not(buffersUsados(paralelo(leer(1), paralelo(escribir(2, a), leer(3))), [1,2,3,4])).
 
 
-cantidadTestsProcesos(8). % Actualizar con la cantidad de tests que entreguen
+
+cantidadTestsProcesos(13). % Actualizar con la cantidad de tests que entreguen
 
 testProcesos(1) :- intercalar([1,2,3],[4,5,6],[1,2,3,4,5,6]).
-testProcesos(2) :- intercalar([],[4,5,6],[4,5,6]).
-testProcesos(3) :- intercalar([],[],[]).
-testProcesos(4) :- intercalar([1],[4],[4,1]).
-testProcesos(5) :- intercalar([[computar],[1,2],4],[3],[[computar], [1, 2], 4, 3]).
-testProcesos(6) :- serializar(secuencia(computar,leer(2)),[computar,leer(2)]).
-testProcesos(7) :- serializar(paralelo(paralelo(leer(1),leer(2)),secuencia(leer(3),leer(4))),[leer(2),leer(3),leer(1),leer(4)]).
-testProcesos(8) :- serializar(secuencia(secuencia(leer(1),leer(2)),paralelo(computar,escribir(4,a))),[leer(1),leer(2),escribir(4,a),computar]).
-testProcesos(9) :- serializar(paralelo(paralelo(leer(1),leer(2)),paralelo(paralelo(leer(3),leer(4)),paralelo(computar,escribir(1,s)))),[leer(3), leer(4), computar, escribir(1, s), leer(1), leer(2)]).
+testProcesos(2) :- intercalar([1,2,3],[4,5,6],[4,5,6,1,2,3]).
+testProcesos(3) :- intercalar([1,2,3],[4,5,6],[1,4,2,5,3,6]).
+testProcesos(4) :- intercalar([],[4,5,6],[4,5,6]).
+testProcesos(5) :- intercalar([],[],[]).
+testProcesos(6) :- intercalar([1],[4],[4,1]).
+testProcesos(7) :- intercalar([[computar],[1,2],4],[3],[[computar], [1, 2], 4, 3]).
+testProcesos(8) :- not(intercalar([1,2],[3,4],[])).
+testProcesos(9) :- not(intercalar([1,2],[3,4],[1,2,4,3])).
+testProcesos(10) :- serializar(secuencia(computar,leer(2)),[computar,leer(2)]).
+testProcesos(11) :- serializar(paralelo(paralelo(leer(1),leer(2)),secuencia(leer(3),leer(4))),[leer(2),leer(3),leer(1),leer(4)]).
+testProcesos(12) :- serializar(secuencia(secuencia(leer(1),leer(2)),paralelo(computar,escribir(4,a))),[leer(1),leer(2),escribir(4,a),computar]).
+testProcesos(13) :- serializar(paralelo(paralelo(leer(1),leer(2)),paralelo(paralelo(leer(3),leer(4)),paralelo(computar,escribir(1,s)))),[leer(3), leer(4), computar, escribir(1, s), leer(1), leer(2)]).
+
 
 cantidadTestsBuffers(21). % Actualizar con la cantidad de tests que entreguen
 
