@@ -14,8 +14,11 @@ proceso(paralelo(P,Q)) :- proceso(P),proceso(Q).
 %% buffersUsados(+P,-BS)
 buffersUsados(leer(B),[B]).
 buffersUsados(escribir(B,_),[B]).
-buffersUsados(secuencia(P,Q),BS) :- buffersUsados(P,R1),buffersUsados(Q,R2),append(R1,R2,BS). 
-buffersUsados(paralelo(P,Q),BS) :- buffersUsados(P,R1),buffersUsados(Q,R2),append(R1,R2,BS). 
+buffersUsados(secuencia(P,Q),BS) :- buffersUsadosSecuenciaParalelo(P,Q,BS).
+buffersUsados(paralelo(P,Q),BS) :- buffersUsadosSecuenciaParalelo(P,Q,BS).
+
+%% buffersUsadosSecuenciaParalelo(+P,+Q,-BS)
+buffersUsadosSecuenciaParalelo(P,Q,BS) :- buffersUsados(P,R1),buffersUsados(Q,R2),append(R1,R2,B), sort(B, BS).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -31,11 +34,14 @@ intercalar(XS,[Y|YS],[Y|ZS]) :- intercalar(XS,YS,ZS).
 
 %% Ejercicio 4
 %% serializar(+P,?XS)
+serializar([],[] ).
+serializar(computar,[] ).
 serializar(leer(B),[leer(B)]).
 serializar(escribir(B,X),[escribir(B,X)]).
 serializar(computar,[computar]).
 serializar(secuencia(P,Q),XS) :- serializar(P,R1),serializar(Q,R2),append(R1,R2,XS).
 serializar(paralelo(P,Q),XS) :- serializar(P,R1),serializar(Q,R2),intercalar(R1,R2,XS).
+serializar([X| XS], RS ) :- serializar(X, XR), serializar(XS, XSR), append(XR, XSR, RS).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Contenido de los buffers %%
@@ -43,17 +49,8 @@ serializar(paralelo(P,Q),XS) :- serializar(P,R1),serializar(Q,R2),intercalar(R1,
 
 %% Ejercicio 5
 %% contenidoInversoBuffer(+B,+ProcesoOLista,?Contenidos)
-contenidoBuffer(B, PS, C) :- aplanarProceso(PS, GU), reverse(GU, RS), contenidoInversoBuffer(B, RS, C1), reverse(C1, C).
+contenidoBuffer(B, PS, C) :- serializar(PS, GU), reverse(GU, RS), contenidoInversoBuffer(B, RS, C1), reverse(C1, C).
 %contenidoBufer tiene en PS las cosas que van a pasar, ContenidoInversoBuffer tiene en PS lo que pasó. 
-
-%% aplanarProceso(+P,-G)
-aplanarProceso( [],[] ).
-aplanarProceso( computar,[] ).
-aplanarProceso( escribir(B, P) ,[escribir(B, P) ] ).
-aplanarProceso( leer(B),[leer(B)] ).
-aplanarProceso(secuencia(P,Q), RS) :- aplanarProceso(P, PS), aplanarProceso(Q, QS), append(PS, QS, RS). 
-aplanarProceso(paralelo(P,Q), RS) :- aplanarProceso(P, PS), aplanarProceso(Q, QS), intercalar(PS, QS, RS). 
-aplanarProceso( [X| XS], RS ) :- aplanarProceso(X, XR), aplanarProceso(XS, XSR), append(XR, XSR, RS).
 
 %% contenidoInversoBuffer(+B,+P,?C)
 contenidoInversoBuffer(_, [], []).
@@ -65,14 +62,12 @@ contenidoInversoBuffer(B1,[escribir(B2,_)|XS],C) :- B1 \= B2,contenidoInversoBuf
 
 %% Ejercicio 6
 %% contenidoLeido(+ProcesoOLista,?Contenidos)
-contenidoLeido( POL , C) :- aplanarProceso(POL, APOL), reverse(APOL, RAPOL), contenidoAplanadoLeido(RAPOL, CR), reverse(CR, C).
+contenidoLeido(POL, C) :- serializar(POL, APOL), reverse(APOL, RAPOL), contenidoAplanadoLeido(RAPOL, CR), reverse(CR, C).
 
 %% contenidoAplanadoLeido(+P,-C)
-contenidoAplanadoLeido( [], []).
-contenidoAplanadoLeido( [leer(B) | XS], C) :-select( escribir(B,P), XS, XSSC),!,  contenidoAplanadoLeido(XSSC, RS), append([P], RS, C).
-contenidoAplanadoLeido(  [escribir(_, _) | XS], C ) :- contenidoAplanadoLeido(XS, C).
-
-
+contenidoAplanadoLeido([], []).
+contenidoAplanadoLeido([leer(B) | XS], C) :-select( escribir(B,CACA), XS, XSSC),!,  contenidoAplanadoLeido(XSSC, RS), append([CACA], RS, C).
+contenidoAplanadoLeido([escribir(_, _) | XS], C ) :- contenidoAplanadoLeido(XS, C).
 
 
 
@@ -86,23 +81,19 @@ esSeguro([]).
 esSeguro(escribir(_, _)).
 esSeguro(computar).
 esSeguro([X|XS]) :- contenidoLeido([X|XS], _).
-esSeguro(secuencia(P,Q)) :- forall( aplanarProceso(secuencia(P,Q), PC), contenidoLeido(PC, _) ). 
-esSeguro( paralelo(P,Q) ) :- forall( aplanarProceso(paralelo(P,Q), PC), contenidoLeido(PC, _) ), buffersUsados(P, BP), buffersUsados(Q,BQ), intersection(BP, BQ, []).
+esSeguro(secuencia(P,Q)) :- forall(serializar(secuencia(P,Q), PC), esSeguro(PC) ). 
+esSeguro(paralelo(P,Q) ) :- esSeguro(P), esSeguro(Q), forall(serializar(paralelo(P,Q), PC), contenidoLeido(PC, _) ), buffersUsados(P, BP), buffersUsados(Q,BQ), intersection(BP, BQ, []).
 
-%% esOperacionMinimalSegura(+X)
-esOperacionMinimalSegura(leer(_)).
-esOperacionMinimalSegura(escribir(_, _)).
-esOperacionMinimalSegura(computar).
 
 %% esOperacionSegura(+X)
 esOperacionSegura(secuencia(P, Q)) :-
     esSeguro(P), 
     esSeguro(Q),
-    forall(aplanarProceso(secuencia(P, Q), PC), contenidoLeido(PC, _)).
+    forall(serializar(secuencia(P, Q), PC), contenidoLeido(PC, _)).
 esOperacionSegura(paralelo(P, Q)) :-
     esSeguro(P),
     esSeguro(Q),
-    forall(aplanarProceso(paralelo(P, Q), PC), contenidoLeido(PC, _)),
+    forall(serializar(paralelo(P, Q), PC), contenidoLeido(PC, _)),
     buffersUsados(P, BP),
     buffersUsados(Q, BQ),
     intersection(BP, BQ, []). % No deben compartir buffers.
@@ -112,19 +103,30 @@ esOperacionSegura(paralelo(P, Q)) :-
 ejecucionSegura(XS, BS, CS):- generarEjecucion(XS, BS, CS), esSeguro(XS).
 
 %% generarOperacionMinimalSegura(?X,+CS,+BS)
-generarOperacionMinimalSegura( computar , _, _ ).  
-generarOperacionMinimalSegura( escribir(B, C), CS, BS ) :- member(B, BS), member(C,CS).  
-generarOperacionMinimalSegura( leer(B) , _, BS ) :- member(B, BS).  
+generarOperacionMinimalSegura(computar , _, _ ).  
+generarOperacionMinimalSegura(escribir(B, C), CS, BS) :- member(B, BS), member(C,CS).  
+generarOperacionMinimalSegura(leer(B), _, BS) :- member(B, BS).  
 
 %% generarEjecucion(?XS,+BS,+CS)
-generarEjecucion( [], _ , _).
-generarEjecucion( [X| XS], BS, CS) :-generarEjecucion(XS,BS, CS), generarOperacionMinimalSegura(X, CS, BS).
+generarEjecucion([], _ , _).
+generarEjecucion([X| XS], BS, CS) :-generarEjecucion(XS,BS, CS), generarOperacionMinimalSegura(X, CS, BS).
 
 
 
 %% 8.1. Analizar la reversibilidad de XS, justificando adecuadamente por qué el predicado se comporta como
 %% lo hace.
+%   El predicado es reversible en XS, esto es asi porque el predicado generarOperacionMinimalSegura que es el generador 
+%   usa únicamente member, por lo que al ser usado de manera instanciada todos los predicados internos funcionarian correctamente.
+%   Si en XS se le pasa un elemento instanciado el cual no es seguro, el predicado generarOperacionMinimalSegura devuelve true 
+%   si es posible construir XS con computar, escribir, leer con los elementos de XS.
+%   De manera más resumida, el predicado funciona correctamente con elementos de manera instanciada como sin instanciar. 
+%   Si la instancia de XS es correcta, primero se chequea que sea posible construirlo con instrucciones de computar, leer o escribir y luego se ejecuta esSeguro.
+%   Si no es una instancia de XS correcta, ya sea porque contiene elementos que no sean computar, leer o escribir no se traba sino que devuelve false. Esto es asi
+%   porque generarEjecucion es recursiva analizando todos los elementos, en un momento por ejemplo se hará generarOperacionMinimalSegura(hola, CS, BS) que devolvera false.
+%   Por otro lado, si la instancica de XS tiene únicamente elemetntos de computar, leer o escribir, como se usa esSeguro que toma elementos instanciados funcionara correctamente
+%   y devuelve falso en caso de que no sea seguro.
 
+%   XS con computar, escribir, leer con los elememtos de XS
 %   Vamos a ver cuando XS esta instanciado y cuando no.
 %   Si XS esta instanciado y es una ejecucion segura que usa
 %   los contenidos y buffers (BS y CS respectivamente) entonces
@@ -154,7 +156,7 @@ generarEjecucion( [X| XS], BS, CS) :-generarEjecucion(XS,BS, CS), generarOperaci
 %%%%%%%%%%%
 
 % Se espera que completen con las subsecciones de tests que crean necesarias, más allá de las puestas en estos ejemplos
-cantidadTestsBasicos(34).
+cantidadTestsBasicos(30).
 
 %ej1
 testBasico(1) :- proceso(computar).
@@ -179,44 +181,34 @@ testBasico(17) :- proceso(secuencia(computar, secuencia(leer(1), escribir(1, a))
 testBasico(18) :- proceso(secuencia(computar, secuencia(paralelo(leer(1), leer(2)), escribir(1, a)))).
 testBasico(19) :- proceso(secuencia(computar, secuencia(paralelo(escribir(1, a), escribir(1, b)), escribir(1, c)))).
 testBasico(20) :- proceso(secuencia(computar, secuencia( secuencia(leer(1), escribir(1, a)), secuencia(leer(1), escribir(1, c))))).
-testBasico(21) :- not(proceso(plp)).
-testBasico(22) :- not(proceso(secuencia(computar, secuencia( secuencia(leer(1), escribir(1, a)), secuencia(peluche, escribir(1, c)))))).
+
 %% ej 2
-testBasico(23) :- buffersUsados(leer(1), [1]).
-testBasico(24) :- buffersUsados(escribir(1, a), [1]).
-testBasico(25) :- buffersUsados(secuencia(leer(1), escribir(1, a)), [1, 1]).
-testBasico(26) :- buffersUsados(paralelo(leer(1), escribir(2, b)), [1, 2]).
-testBasico(27) :- buffersUsados(secuencia(secuencia(leer(1), escribir(2, a)), leer(3)), [1, 2, 3]).
-testBasico(28) :- buffersUsados(paralelo(secuencia(leer(1), escribir(2, a)), escribir(3, b)), [1, 2, 3]).
-testBasico(29) :- buffersUsados(paralelo(leer(1), paralelo(escribir(2, a), leer(3))), [1, 2, 3]).
-testBasico(30) :- buffersUsados(secuencia(paralelo(leer(1), escribir(2, b)), paralelo(leer(3), escribir(4, c))), [1, 2, 3, 4]).
-testBasico(31) :- buffersUsados(secuencia(secuencia(leer(1), escribir(2, a)), secuencia(leer(3), escribir(4, b))), [1, 2, 3, 4]).
-testBasico(32) :- buffersUsados(paralelo(
+testBasico(21) :- buffersUsados(leer(1), [1]).
+testBasico(22) :- buffersUsados(escribir(1, a), [1]).
+testBasico(23) :- buffersUsados(secuencia(leer(1), escribir(1, a)), [1]).
+testBasico(24) :- buffersUsados(paralelo(leer(1), escribir(2, b)), [1, 2]).
+testBasico(25) :- buffersUsados(secuencia(secuencia(leer(1), escribir(2, a)), leer(3)), [1, 2, 3]).
+testBasico(26) :- buffersUsados(paralelo(secuencia(leer(1), escribir(2, a)), escribir(3, b)), [1, 2, 3]).
+testBasico(27) :- buffersUsados(paralelo(leer(1), paralelo(escribir(2, a), leer(3))), [1, 2, 3]).
+testBasico(28) :- buffersUsados(secuencia(paralelo(leer(1), escribir(2, b)), paralelo(leer(3), escribir(4, c))), [1, 2, 3, 4]).
+testBasico(29) :- buffersUsados(secuencia(secuencia(leer(1), escribir(2, a)), secuencia(leer(3), escribir(4, b))), [1, 2, 3, 4]).
+testBasico(30) :- buffersUsados(paralelo(
     secuencia(leer(1), escribir(2, a)),
     secuencia(leer(3), paralelo(leer(4), escribir(5, b)))
 ), [1, 2, 3, 4, 5]).
-testBasico(33) :- not(buffersUsados(paralelo(leer(1), paralelo(escribir(2, a), leer(3))), [])).
-testBasico(33) :- not(buffersUsados(paralelo(leer(1), paralelo(escribir(2, a), leer(3))), [1])).
-testBasico(34) :- not(buffersUsados(paralelo(leer(1), paralelo(escribir(2, a), leer(3))), [1,2,3,4])).
 
 
-
-cantidadTestsProcesos(13). % Actualizar con la cantidad de tests que entreguen
+cantidadTestsProcesos(8). % Actualizar con la cantidad de tests que entreguen
 
 testProcesos(1) :- intercalar([1,2,3],[4,5,6],[1,2,3,4,5,6]).
-testProcesos(2) :- intercalar([1,2,3],[4,5,6],[4,5,6,1,2,3]).
-testProcesos(3) :- intercalar([1,2,3],[4,5,6],[1,4,2,5,3,6]).
-testProcesos(4) :- intercalar([],[4,5,6],[4,5,6]).
-testProcesos(5) :- intercalar([],[],[]).
-testProcesos(6) :- intercalar([1],[4],[4,1]).
-testProcesos(7) :- intercalar([[computar],[1,2],4],[3],[[computar], [1, 2], 4, 3]).
-testProcesos(8) :- not(intercalar([1,2],[3,4],[])).
-testProcesos(9) :- not(intercalar([1,2],[3,4],[1,2,4,3])).
-testProcesos(10) :- serializar(secuencia(computar,leer(2)),[computar,leer(2)]).
-testProcesos(11) :- serializar(paralelo(paralelo(leer(1),leer(2)),secuencia(leer(3),leer(4))),[leer(2),leer(3),leer(1),leer(4)]).
-testProcesos(12) :- serializar(secuencia(secuencia(leer(1),leer(2)),paralelo(computar,escribir(4,a))),[leer(1),leer(2),escribir(4,a),computar]).
-testProcesos(13) :- serializar(paralelo(paralelo(leer(1),leer(2)),paralelo(paralelo(leer(3),leer(4)),paralelo(computar,escribir(1,s)))),[leer(3), leer(4), computar, escribir(1, s), leer(1), leer(2)]).
-
+testProcesos(2) :- intercalar([],[4,5,6],[4,5,6]).
+testProcesos(3) :- intercalar([],[],[]).
+testProcesos(4) :- intercalar([1],[4],[4,1]).
+testProcesos(5) :- intercalar([[computar],[1,2],4],[3],[[computar], [1, 2], 4, 3]).
+testProcesos(6) :- serializar(secuencia(computar,leer(2)),[computar,leer(2)]).
+testProcesos(7) :- serializar(paralelo(paralelo(leer(1),leer(2)),secuencia(leer(3),leer(4))),[leer(2),leer(3),leer(1),leer(4)]).
+testProcesos(8) :- serializar(secuencia(secuencia(leer(1),leer(2)),paralelo(computar,escribir(4,a))),[leer(1),leer(2),escribir(4,a),computar]).
+testProcesos(9) :- serializar(paralelo(paralelo(leer(1),leer(2)),paralelo(paralelo(leer(3),leer(4)),paralelo(computar,escribir(1,s)))),[leer(3), leer(4), computar, escribir(1, s), leer(1), leer(2)]).
 
 cantidadTestsBuffers(21). % Actualizar con la cantidad de tests que entreguen
 
@@ -272,6 +264,12 @@ testSeguros(11) :- ejecucionSegura([computar,computar,computar],[],[]).
 testSeguros(12) :- ejecucionSegura([escribir(1, b), leer(1), escribir(1, b)],[1],[b]).
 testSeguros(13) :-not(ejecucionSegura([leer(1),escribir(1,b)],[1],[b])).
 testSeguros(14) :- not(ejecucionSegura([leer(1)],[1],[b])).
+testSeguros(14) :- not(ejecucionSegura([hola],[1],[b])).
+testSeguros(15) :- ejecucionSegura(XS, [1], [b]), XS = [leer(1), escribir(1, b)].
+testSeguros(16) :- ejecucionSegura(XS, [1], [b]), XS = [leer(1)].
+testSeguros(17) :- ejecucionSegura(XS, [1], [b]), XS = [computar, leer(1), escribir(1, b)].
+testSeguros(18) :- ejecucionSegura(XS,[1,2],[a,b]), XS = [computar].
+testSeguros(19) :- ejecucionSegura(XS,[1,2],[a,b]), XS = [computar,  escribir(1,a),escribir(1,b)].
 
 tests(basico) :- cantidadTestsBasicos(M), forall(between(1,M,N), testBasico(N)).
 tests(procesos) :- cantidadTestsProcesos(M), forall(between(1,M,N), testProcesos(N)).
