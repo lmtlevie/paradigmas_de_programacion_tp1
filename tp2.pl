@@ -265,11 +265,10 @@ testSeguros(12) :- ejecucionSegura([escribir(1, b), leer(1), escribir(1, b)],[1]
 testSeguros(13) :-not(ejecucionSegura([leer(1),escribir(1,b)],[1],[b])).
 testSeguros(14) :- not(ejecucionSegura([leer(1)],[1],[b])).
 testSeguros(14) :- not(ejecucionSegura([hola],[1],[b])).
-testSeguros(15) :- ejecucionSegura(XS, [1], [b]), XS = [leer(1), escribir(1, b)].
-testSeguros(16) :- ejecucionSegura(XS, [1], [b]), XS = [leer(1)].
-testSeguros(17) :- ejecucionSegura(XS, [1], [b]), XS = [computar, leer(1), escribir(1, b)].
+testSeguros(15) :- ejecucionSegura(XS, [1], [b]), XS = [escribir(1, b)].
+testSeguros(16) :- ejecucionSegura(XS,[1,2],[a,b]), XS = [computar,  escribir(1,a),escribir(1,b)].
+testSeguros(17) :- ejecucionSegura(XS, [1], [b,a]), XS = [computar, escribir(1,a), leer(1), escribir(1, b)].
 testSeguros(18) :- ejecucionSegura(XS,[1,2],[a,b]), XS = [computar].
-testSeguros(19) :- ejecucionSegura(XS,[1,2],[a,b]), XS = [computar,  escribir(1,a),escribir(1,b)].
 
 tests(basico) :- cantidadTestsBasicos(M), forall(between(1,M,N), testBasico(N)).
 tests(procesos) :- cantidadTestsProcesos(M), forall(between(1,M,N), testProcesos(N)).
