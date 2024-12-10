@@ -12,6 +12,7 @@ proceso(paralelo(P,Q)) :- proceso(P),proceso(Q).
 
 %% Ejercicio 2
 %% buffersUsados(+P,-BS)
+buffersUsados(computar,[]).
 buffersUsados(leer(B),[B]).
 buffersUsados(escribir(B,_),[B]).
 buffersUsados(secuencia(P,Q),BS) :- buffersUsadosSecuenciaParalelo(P,Q,BS).
@@ -97,12 +98,24 @@ esSeguro([]).
 esSeguro(escribir(_, _)).
 esSeguro(computar).
 esSeguro([X|XS]) :- contenidoLeido([X|XS], _).
-esSeguro(secuencia(P,Q)) :- serializar(secuencia(P,Q), PC), esSeguro(PC). 
+esSeguro(secuencia(P,Q)) :- forall(serializar(secuencia(P,Q), PC), esSeguro(PC)), noCompartenBufferParalelo(P), noCompartenBufferParalelo(Q). 
 esSeguro(paralelo(P,Q) ) :- 
     esSeguro(P), esSeguro(Q), 
     forall(serializar(paralelo(P,Q), PC), esSeguro(PC)), 
-    buffersUsados(P, BP), buffersUsados(Q,BQ), intersection(BP, BQ, []).
+    noCompartenBufferParalelo(paralelo(P,Q)).
 
+noCompartenBufferParalelo(computar).
+noCompartenBufferParalelo(escribir(_,_)).
+noCompartenBufferParalelo(leer(_)).
+noCompartenBufferParalelo(secuencia(P,Q)):-
+        noCompartenBufferParalelo(P),
+        noCompartenBufferParalelo(Q).
+noCompartenBufferParalelo(paralelo(P,Q)):- 
+    noCompartenBufferParalelo(P),
+    noCompartenBufferParalelo(Q),
+    buffersUsados(P, BP), 
+    buffersUsados(Q,BQ), 
+    intersection(BP, BQ, []).
 
 %% Ejercicio 8
 %% ejecucionSegura(?XS,+BS,+CS)
@@ -131,30 +144,6 @@ generarEjecucion([X| XS], BS, CS) :-generarEjecucion(XS,BS, CS), generarOperacio
 %   porque generarEjecucion es recursiva analizando todos los elementos, en un momento por ejemplo se hará generarOperacionMinimalSegura(hola, CS, BS) que devolvera false.
 %   Por otro lado, si la instancica de XS tiene únicamente elemetntos de computar, leer o escribir, como se usa esSeguro que toma elementos instanciados funcionara correctamente
 %   y devuelve falso en caso de que no sea seguro.
-
-%   XS con computar, escribir, leer con los elememtos de XS
-%   Vamos a ver cuando XS esta instanciado y cuando no.
-%   Si XS esta instanciado y es una ejecucion segura que usa
-%   los contenidos y buffers (BS y CS respectivamente) entonces
-%   el predicado termina de manera esperada dando true.
-%   Si XS usamos una instancia que contiene lecturas a buffers
-%   vacios o que no conocemos, o contiene una lectura en paralelo
-%   el predicado nos da false. En otras palabras, el predicado 
-%   se comporta de manera esperada en cada caso donde XS esta
-%   instanciado, no se cuelga. En los dos casos estamos verificando que XS
-%   es una posible ejecucion y luego lo testeamos viendo si es segura.
-%
-%   Si XS no esta instanciado, entonces nos da las infinitas
-%   combinaciones de ejecuciones seguras que podemos conseguir
-%   usando los contenidos y buffers dados. Que es exactamente
-%   lo que queremos conseguir, podemos observar que no se generan
-%   soluciones repetidas. 
-%
-%   De esta manera podemos afirmar que XS es reversible efectivamente.
-%   
-%
-%
-%
 %
 %
 %%%%%%%%%%%
@@ -259,7 +248,7 @@ testSeguros(5) :- esSeguro(paralelo(escribir(1,a),escribir(2,b))).
 testSeguros(6) :- esSeguro(secuencia(escribir(1,a),escribir(2,b))).
 testSeguros(7) :- not(esSeguro(paralelo(escribir(2,sol),escribir(2,papa)))).
 testSeguros(8) :- not(esSeguro(paralelo(leer(1,sol),escribir(2,papa)))).
-testSeguros(9) :- esSeguro(secuencia(computar,secuencia(computar,paralelo(escribir(1,a),computar)))).
+testSeguros(9) :- esSeguro(secuencia(computar,paralelo(escribir(1,a),computar))).
 
 
 %% ej 8
