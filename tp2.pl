@@ -134,16 +134,27 @@ generarEjecucion([X| XS], BS, CS) :-generarEjecucion(XS,BS, CS), generarOperacio
 
 %% 8.1. Analizar la reversibilidad de XS, justificando adecuadamente por qué el predicado se comporta como
 %% lo hace.
-%   El predicado es reversible en XS, esto es asi porque el predicado generarOperacionMinimalSegura que es el generador 
-%   usa únicamente member, por lo que al ser usado de manera instanciada todos los predicados internos funcionarian correctamente.
-%   Si en XS se le pasa un elemento instanciado el cual no es seguro, el predicado generarOperacionMinimalSegura devuelve true 
-%   si es posible construir XS con computar, escribir, leer con los elementos de XS.
-%   De manera más resumida, el predicado funciona correctamente con elementos de manera instanciada como sin instanciar. 
+%   El predicado es reversible en XS, esto es asi porque el predicado generarOperacionMinimalSegura, que es el generador, 
+%   usa únicamente 'member', por lo que al ser usado de manera instanciada todos los predicados internos funcionarían correctamente.
+%   Si XS está instanciado y no es seguro, el predicado generarOperacionMinimalSegura devuelve true si es posible construir XS con computar, escribir y leer acordemente con BS y CS.
+%   El predicado funciona correctamente con elementos de manera instanciada como sin instanciar. 
 %   Si la instancia de XS es correcta, primero se chequea que sea posible construirlo con instrucciones de computar, leer o escribir y luego se ejecuta esSeguro.
-%   Si no es una instancia de XS correcta, ya sea porque contiene elementos que no sean computar, leer o escribir no se traba sino que devuelve false. Esto es asi
+%   Si no es una instancia de XS correcta, ya sea porque contiene elementos que no sean computar, leer o escribir, no se traba, sino que devuelve false. Esto es asi
 %   porque generarEjecucion es recursiva analizando todos los elementos, en un momento por ejemplo se hará generarOperacionMinimalSegura(hola, CS, BS) que devolvera false.
-%   Por otro lado, si la instancica de XS tiene únicamente elemetntos de computar, leer o escribir, como se usa esSeguro que toma elementos instanciados funcionara correctamente
-%   y devuelve falso en caso de que no sea seguro.
+%   Por otro lado, si la instancica de XS tiene únicamente elementos de computar, leer o escribir, como se usa esSeguro que toma elementos instanciados funcionara correctamente
+%   y devuelve falso en caso de que no sea seguro. 
+%   La finalización de ejecuciónSegura reside en generarEjecución, pues es el generador, y por tanto el responsable de que a esSeguro le llegue un XS instanciado ( esSeguro así lo requiere ).
+%   generarEjecución cuenta con un caso base que siempre termina e instancia XS si es necesario. También tiene una cláusula recursiva que genera ejecuciones de manera iterativa. 
+%   Esta recursión aprovecha el caso base definido previamente, lo que asegura que cada llamada recursiva eventualmente instancie en XS vacío cuando llegue al caso base.
+%   Cuando ocurre un fallo o se necesita generar otra respuesta, el mecanismo de backtracking hace que Prolog retroceda al último caso base alcanzado y continúe con la cláusula recursiva.
+%   Esto permite que generarEjecucion vuelva a generar nuevas ejecuciones, garantizando que siempre se termine instanciando XS mediante el caso base.
+%   Además está generarOperaciónMinimalSegura, que es responsable de generar los contenidos de la ejecución. Está definida con 3 cláusulas, de las cuales 2 utilizan member (reversible), y 
+%   ambas 3 instancian en caso de no estarlo, al hacer backtracking recorren exhaustivamente las operaciones minimales posibles, y siempre terminan (si BS y CS son finitos). Por tanto son reversibles en X.  
+%   generarEjecución utiliza generarOperacionMinimal para generar los elementos de la lista de Operaciones, o verificarlos en caso de que estén instanciados.    
+%   Por todo esto es que esta generación recursiva asegura que, cuando XS no está instanciado inicialmente, se irá construyendo paso a paso durante el proceso de backtracking. Y que cuando lo está,
+%   el predicado termina y no da a lugar a errores al pedirle más respuestas ( no hay más cláusulas ).
+%   Por lo tanto, la combinación de un generador recursivo con caso base (generarEjecucion) y un verificador determinista (esSeguro) garantiza la finalización de ejecuciónSegura,
+%   siempre y cuando los dominios de BS y CS sean finitos.   
 %
 %
 %%%%%%%%%%%
